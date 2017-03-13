@@ -1,0 +1,62 @@
+=============================
+INSTRUCTIONS
+=============================
+
+This workbook can be used to:
+a> Load an existing Palette or Origin Color List (theme) file.
+     OR enter your own data (see Create New Colors below).
+b> Modify colors using interpolation or reduction.
+c> Save colors to a Palette file (ASCII, Binary) or to a 
+     Origin Color List (theme) file.
+
+=============================
+Load Palette or Color List
+=============================
+Use the "Load Palette", "Load ColorList", or "Load GIMP Palette"
+buttons to read from an existing File. 
+Color Lists are specific to Origin, and have .OTH file extension. 
+Color palettes can be ASCII or Binary palette file. 
+Origin ships with a collection of palette and color list files.
+
+
+=============================
+Create New Colors
+=============================
+Use the "Clear Data" button to clear existing color entries. 
+You can then type in desired R, G,  B values to start a new color list.
+If values are in the range of 0-255, paste/type into CONTROLS sheet. 
+If values are in the range of 0-1 or 0-100, paste/type into RAW sheet
+and press the "Transfer Data" button to move to the CONTROLS sheet.
+
+=============================
+Interpolate
+=============================
+Click the "Interpolate" button to either extend or reduce the number of colors. 
+Various interpolation methods are provided. 
+Click the "Undo" button to revert to previous values.
+
+=============================
+Reduce Colors
+=============================
+Note that you can enter a smaller number in the interpolate dialog, 
+and the interpolation will reduce your color list. 
+
+=============================
+Save Palette or Color List
+=============================
+The "Save Palette" button will let you save colors to a Palette (.PAL) 
+file in either ASCII or Binary format. 
+The "Save Color List" button will let you save colors to a
+Color List (theme) file.
+
+===================================
+Hue, Saturation, Lightness and Relative Luminance
+===================================
+See
+https://en.wikipedia.org/wiki/HSL_and_HSV#Lightness
+
+Lightness column is calculated using bi-hexcone model, 
+the average of the largest and smallest color components
+
+For Relative Luminance calculation, see:
+https://en.wikipedia.org/wiki/Relative_luminance

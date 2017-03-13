@@ -1,0 +1,238 @@
+[main]
+	if(run.section(,OCLoad)!= 0)
+		return;
+
+	// Open workbook
+	doc -o "%@AColor Editor\ColorEditor.ogw";
+
+[OCLoad]
+	sec -poc 2;
+	if( 0 != run.LoadOC( "%@AColor Editor\ColorEditor.c", 16 ) )
+	{
+		type -b Failed to compile code!;
+		return 1;
+	}
+	return 0;
+[btnInstructions]
+	// Open instructions text in a notes window
+	open -n "%@aColor Editor\Instructions.txt";
+	
+[btnReadPalette]
+	if(run.section(,OCLoad)!= 0)
+		return;
+	// Read Palette file
+	btnUndo.show=0;
+	string strpath$;
+	strpath$ = system.path.program$ + "Palettes";
+	dlgFile group:="*.PAL" title:="Select Palette" init:=strPath$;
+	int nColors = ol_read_palette(fname$);
+	if( nColors > 0)
+	{
+		strpath$ = fname.GetFileName()$;
+		page.longname$=strpath$;
+		type -v -a Read $(nColors) colors from file %(fname$);
+	}
+	else
+	{
+		type -a Failed to read file;
+	}
+	
+[btnReadList]
+	if(run.section(,OCLoad)!= 0)
+		return;
+
+	// Read Color List (theme) file
+	btnUndo.show=0;
+	string strpath$;
+	strpath$ = system.path.program$ + "Themes\Color";
+	dlgFile group:="*.OTH" title:="Select Color List" init:=strPath$;
+	int nColors = ol_read_colorlist(fname$);
+	if( nColors > 0)
+	{
+		strpath$ = fname.GetFileName()$;
+		page.longname$=strpath$;
+		type -v -a Read $(nColors) colors from file %(fname$);
+	}
+	else
+	{
+		type -a Failed to read file;
+	}
+	
+[btnInterp]
+	// Bring up dialog and get num points and interpolation method
+	string strType$="Linear Spline B-Spline (Akima Spline)";
+	int nColors = 256;
+	int nMethod=1;
+	getn (Interpolation Type) nSel:strType$ (No. of Colors) nColors;
+	if( (nColors<2) | (nColors>256) )
+	{
+		type -a No. of colors should be between 2 and 256;
+		break;
+	}
+
+	// Backup current data
+	range rRed=1,rGreen=2,rBlue=3;
+	range rRTemp=10, rGTemp=11, rBTemp=12;
+	rRtemp = rRed; rGTemp = rGreen; rBTemp = rBlue;
+	int nn = rRed.GetSize();
+	rRTemp.SetSize(nn); rGTemp.SetSize(nn); rBTemp.SetSize(nn); 
+	
+	// Do the interpolation
+	dataset dx, dy;
+	nMethod -=1;
+	interp1xy rRed npts:=nColors method:=$(nMethod) oy:=(dx, dy);
+	rRed=dy;
+	interp1xy rGreen npts:=nColors method:=$(nMethod) oy:=(dx, dy);
+	rGreen=dy;
+	interp1xy rBlue npts:=nColors method:=$(nMethod) oy:=(dx, dy);
+	rBlue=dy;
+	rRed.SetSize(nColors);
+	rGreen.SetSize(nColors);
+	rBlue.SetSize(nColors);
+	
+	// Turn on undo button
+	btnUndo.Show = 1;
+	
+[btnInterpUndo]
+	// Copy from backup
+	range rRed=1,rGreen=2,rBlue=3;
+	range rRTemp=10, rGTemp=11, rBTemp=12;
+	rRed=rRTemp; rGreen=rGTemp; rBlue=rBTemp;
+	int nn = rRTemp.GetSize();
+	rRed.SetSize(nn); rGreen.SetSize(nn); rBlue.SetSize(nn); 
+	rRTemp.SetSize(0); rGTemp.SetSize(0); rBTemp.SetSize(0);
+	// Turn off undo button
+	btnUndo.Show = 0;
+	
+[btnReverse]
+	btnUndo.show=0;
+	colreverse 1!(1:3);	
+	
+[btnWritePalette]
+	if(run.section(,OCLoad)!= 0)
+		return;
+
+	// Write Palette file
+	btnUndo.show=0;
+	range rRed=1, rGreen=2, rBlue=3;
+	int n1, n2, n3;
+	n1=rRed.GetSize(); n2=rGreen.GetSize(); n3=rBlue.GetSize();
+	if( (n1<2) | (n1>256) | (n2<2) | (n2>256) |(n3<2) | (n3>256) )
+	{
+		type -a No. of colors should be between 2 and 256;
+		break;
+	}
+	string strFormat$="ASCII Binary";
+	string fname$;
+	int nSel=2;
+	getn -c IsCancel (File Format) nSel:strFormat$ (Palette Name) fname$;
+	if( !IsCancel )
+	{
+		// Palettes subfolder may not already exist under UFF, so first add if not there
+		if !(ol_check_add_fld(%YPalettes))
+			break;
+		
+		fname$ = %YPalettes\%(fname$).PAL;
+		range rRed=1;
+		int nSize = rRed.GetSize();
+		int ierr;
+		if( 2==nSel )
+		{
+			ierr = ol_write_palette_binary(fname$, nSize );
+		}
+		else
+		{
+			ierr = ol_write_palette_ascii(fname$, nSize);
+		}
+		if(0 == ierr)
+		{
+			type -v -a Wrote colors to palette file %(fname$);
+		}
+		else
+			type -a Failed to write file;
+			
+	}
+	
+[btnWriteList]
+	if(run.section(,OCLoad)!= 0)
+		return;
+
+	// Write Color List (theme) file
+	btnUndo.show=0;
+	range rRed=1, rGreen=2, rBlue=3;
+	int n1, n2, n3;
+	n1=rRed.GetSize(); n2=rGreen.GetSize(); n3=rBlue.GetSize();
+	if( (n1<2) | (n1>256) | (n2<2) | (n2>256) |(n3<2) | (n3>256) )
+	{
+		type -a No. of colors should be between 2 and 256;
+		break;
+	}
+	string fname$;
+	getn -c IsCancel (Colorlist Name) fname$;
+	if( !IsCancel )
+	{
+		// Themes\Graph subfolder may not already exist under UFF, so first add if not there
+		if !(ol_check_add_fld(%YThemes\Graph))
+			break;
+		
+		fname$ = %YThemes\Graph\%(fname$).OTH;
+		range rRed=1;
+		int nSize = rRed.GetSize();
+		int ierr = ol_write_colorlist(fname$, nSize);
+		if(0 == ierr)
+		{
+			type -v -a Wrote colors to theme file %(fname$);
+		}
+		else
+		{
+			type -a Failed to write file;
+		}
+			
+	}
+
+[LoadGimpPal]
+	if(run.section(,OCLoad)!= 0)
+		return;
+
+btnUndo.show = 0;
+string path$;
+path$ = %y;
+dlgFile group:="*.gpl" title:="Load GIMP Palette" init:=Path$;
+int nColors = ol_load_gimp(fname$);
+if( nColors > 0)
+{
+		path$ = fname.GetFileName()$;
+		page.longname$=path$;
+	type -v -a Read $(nColors) colors from file %(fname$);
+}
+else
+	type -a Failed to read file;
+	
+
+[btnTransferData]
+	// Check if data is in range of 0-1 or 0-100
+	range r=!(1:3);
+	stats r;
+	if( stats.min < 0 || stats.max > 100)
+	{
+		type -b Data needs to be in range of 0-1 or 0-100;
+		break;
+	}
+	double dScale = 255;
+	if( stats.max > 1 )
+		dScale = 2.55;
+	range r1=1, r2=2, r3=3;
+	range rR=1!1, rG=1!2, rB=1!3;
+	rR = r1*dScale; 
+	rG = r2*dScale;
+	rB = r3*dScale;
+	int nSize = r1.GetSize();
+	rR.SetSize(nSize);
+	rG.SetSize(nSize);
+	rB.SetSize(nSize);
+	
+[btnClearData]
+	// Confirm with user and clear worksheet
+	wclear;
+	
+	// End of script sections

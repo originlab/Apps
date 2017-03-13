@@ -1,0 +1,31 @@
+## This is Apps repository only
+*opx
+*.[Ee]xe
+*.EXE
+
+## we should all use .cnf .api as operational data
+## system settings for App should use *.ini
+*.cnf
+*.api
+
+*.zip
+*.dll
+*.exp
+*.ilk
+*.lib
+*.pdb
+*.obj
+*.pch
+*.ipch
+*.user
+*.res
+*.idb
+*.lastbuildstate
+*.sdf
+*.suo
+*.log
+*.tlog
+
+*.APS
+
+/cleanup.bat

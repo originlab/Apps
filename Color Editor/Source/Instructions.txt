@@ -1,0 +1,50 @@
+=============================
+INSTRUCTIONS
+=============================
+
+This workbook can be used to:
+a> Load an existing Palette or Origin Color List (theme) file
+     or clear data and type in desired color values
+b> Modify colors including interpolation or reduction
+c> Save colors to a Palette file (ASCII, Binary) or to a 
+     Color List (theme) file
+
+=============================
+Load Palette or Color List
+=============================
+Use the "Load Palette" or "Load ColorList' buttons to read
+from an existing File. 
+Color Lists are specific to Origin, and have .OTH file extension. 
+Color palettes can be any ASCII or Binary palette file. 
+Origin ships with a collection of palette and color list files.
+
+=============================
+Create New Colors
+=============================
+Use the "Worksheet: Clear Worksheet" menu to clear existing color entries. 
+You can then type in desired R, G B values to start a new color list.
+Note that values need to be between 0 and 255.
+
+=============================
+Interpolate
+=============================
+Click the "Interpolate" button to either extend or reduce the number of colors. 
+Various interpolation methods are provided. 
+Click the "Undo" button to revert to previous values.
+
+=============================
+Reduce Colors
+=============================
+Note that you can enter a smaller number in the interpolate dialog, 
+and the interpolation will reduce your color list. 
+You can also select and delete rows in the worksheet, 
+or use the "Worksheet: Reduce Rows" tool.
+
+=============================
+Save Palette or Color List
+=============================
+The "Save Palette" button will let you save colors to a Palette (.PAL) 
+file in either ASCII or Binary format. 
+The "Save Color List" button will let you save colors to a
+Color List (theme) file.
+
