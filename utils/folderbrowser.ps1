@@ -1,4 +1,4 @@
-$title = "Select App to work"
+$title="Select an App in your local repository folder to link to in AppData\Local\OriginLab\Apps. Note: Your repository folder must be on the same PC as your AppData folder."
 if ($PSVersionTable.PSVersion.Major -gt 2) {
 	Add-Type -AssemblyName System.Windows.Forms
 	$FolderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog -Property @{

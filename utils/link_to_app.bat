@@ -12,6 +12,6 @@ if "%appname%"=="" (
 	echo User cancel
 ) else (
 	set destapp=!localappdata!\OriginLab\Apps\!appname!
-	mklink /D "!destapp!" "!sourceapp!"
+	mklink /J "!destapp!" "!sourceapp!"
 )
 pause
