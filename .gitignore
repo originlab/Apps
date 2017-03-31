@@ -29,4 +29,7 @@
 
 *.APS
 
+## Chris 03-31-2017 Ignore hidden files created by Windows
+Thumbs.db
+
 /cleanup.bat
