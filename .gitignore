@@ -29,7 +29,13 @@
 
 *.APS
 
-## Chris 03-31-2017 Ignore hidden files created by Windows
+## Chris 03-31-2017 Ignore hidden files created by OSes
 Thumbs.db
+ehthumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 
 /cleanup.bat
