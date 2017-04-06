@@ -1,0 +1,5 @@
+[launch]
+if( run.LoadOC("%@AOPJ Examiner\OPJExaminerDlg.cpp", 16) == 0 )
+	DoOPJExaminerDlg;
+else
+	type "Failed to load %@AOPJ Examiner\OPJExaminerDlg.cpp!";
