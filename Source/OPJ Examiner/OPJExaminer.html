@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <meta name="description" content="Index of OPJ Examiner">
+        <meta name="version" content="94sr1">
+        <meta name="author" content="Yuki">
+
+        <title>OPJ Examiner</title>	
+               
+        <!-- Bootstrap core CSS -->
+        <link href="dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="styles/style.css" rel="stylesheet">
+    </head>
+
+    <body>
+        
+        <div class="container theme-showcase" role="main">
+            <!--<div class="page-header">-->
+                <h3 class="text-center">OPJ Examiner</h3>
+            <!--</div>-->
+
+            <div class="tabs">
+                
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active"><a href="#tab-1" data-toggle="tab">Dependents Broswer</a></li>
+
+                    <li role="presentation"><a href="#tab-2" data-toggle="tab">Independent Books</a></li>
+                </ul>
+                
+                <div class="tab-content" id="tabContent">
+                    <!--tab1-Dependents Broswer-->
+                    <div class="tab-pane fade in active" id="tab-1">
+                        <!--Radio button is used to select to show which list in tab-->
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <input type="radio" name="checkmode" value="sheet" checked>
+                                            <label for="sheet">
+                                                Sheet Mode <small class="text-muted">(Check the sheets in active book.)</small>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>                            
+                                            <input type="radio" name="checkmode" value="column">
+                                            <label for="column">
+                                                Column Mode <small class="text-muted">(Check the columns/Matrix Objects in active sheet.)</small>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <button id="tab1Check" type="button" class="btn btn-default">Check</button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        <!--There are a left panel and a right panel in Tab1--> 
+                        <div class="row">
+                            <div class="col-sm-8 col-md-6">
+                                <div id="msgdiv" style="display: none" mce_style="display: none"></div>
+                                <!--The left panel will show a table-->
+                                <div class="panel-table1" id="table1" style="display: none" mce_style="display: none"></div>
+                            </div>
+                            <div class="col-sm-4 col-md-6">
+                                <!--The right panel will show a list of graph-->
+                                <div class="panel-graphpreview" id="graphpreview" style="display: none" mce_style="display: none"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--tab2-Independent Book-->
+                    <div id="tab-2" class="tab-pane fade">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <div class="btn-group">                    
+                                    <button id="tab2Find" type="button" class="btn btn-default">Find</button>
+                                    <button id="tab2Delete" type="button" class="btn btn-default" disabled>Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!--There is only one panel in Tab2-->
+                        <!--This main panel will show a table-->
+                        <div class="panel-table2" id="table2" style="display: none" mce_style="display: none"></div>
+                    </div>
+                </div>
+            </div>        
+        </div>
+    
+        <footer class="footer">
+            <div class="container">
+                <p class="text-muted" id="msg">Message Box</p>
+            </div>
+        </footer>
+        
+        <!-- Placed at the end of the document so the pages load faster -->
+        <script src="dist/jquery.min.js"></script>
+        <script src="dist/js/bootstrap.min.js"></script> 
+        <script src="scripts/script.js"></script> 
+        <script type="text/javascript" src="dist/jquery.tablesorter.min.js"></script>
+        
+    </body>
+</html>
