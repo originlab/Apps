@@ -40,22 +40,27 @@
 [btnReadList]
 	if(run.section(,OCLoad)!= 0)
 		return;
-
+	page.v1=0;//reset it first
 	// Read Color List (theme) file
 	btnUndo.show=0;
 	string strpath$;
 	strpath$ = system.path.program$ + "Themes\Color";
 	dlgFile group:="*.OTH" title:="Select Color List" init:=strPath$;
-	int nColors = ol_read_colorlist(fname$);
+	int nThemeID, nLocation;
+	int nColors = ol_read_colorlist(fname$,nThemeID,nLocation);
 	if( nColors > 0)
 	{
 		strpath$ = fname.GetFileName()$;
 		page.longname$=strpath$;
 		type -v -a Read $(nColors) colors from file %(fname$);
+		//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
+		page.v1=nThemeID;
+		page.v2=nLocation;
+		//------
 	}
 	else
 	{
-		type -a Failed to read file;
+		type -v -a Failed to read from file %(fname$);
 	}
 	
 [btnInterp]
@@ -178,7 +183,10 @@
 		fname$ = %YThemes\Graph\%(fname$).OTH;
 		range rRed=1;
 		int nSize = rRed.GetSize();
-		int ierr = ol_write_colorlist(fname$, nSize);
+		//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
+		//int ierr = ol_write_colorlist(fname$, nSize);
+		int ierr = ol_write_colorlist(fname$, nSize, page.v1);
+		//------
 		if(0 == ierr)
 		{
 			type -v -a Wrote colors to theme file %(fname$);

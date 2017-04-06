@@ -13,7 +13,7 @@
 #include <origin.h>
 #include <ocu.h> 
 ////////////////////////////////////////////////////////////////////////////////////
-
+#include <..\Originlab\okThemeID.h>//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Function: ol_write_palette_binary
@@ -245,13 +245,32 @@ int ol_read_palette_ascii(string strFileName, vector<BYTE> &vRed, vector<BYTE> &
 	
 	return nColors;
 }
-
+//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
+static bool _is_color_list_ID(int nID)
+{
+	if(OTID_GLOBAL_COLOR_LIST == nID)
+		return true;
+	//the following are in a consecutive range
+	//OTID_GLOBAL_LINECOLOR_LIST
+	//OTID_GLOBAL_SYMBEDGECOLOR_LIST
+	//OTID_GLOBAL_SYMBFILLCOLOR_LIST
+	//OTID_GLOBAL_BORDERCOLOR_LIST
+	//OTID_GLOBAL_FILLCOLOR_LIST
+	if(nID >= OTID_GLOBAL_LINECOLOR_LIST && nID <= OTID_GLOBAL_FILLCOLOR_LIST)
+		return true;
+	
+	return false;
+}
+//-------
 
 /////////////////////////////////////////////////////////////////////////////////////
 // Function: ol_read_colorlist
 // This function reads the color values from an Origin color list (OTH) file
-//
-int ol_read_colorlist(string strFileName)
+// and return the internal theme ID, it will check that the OTH is a color list
+// return 0 if not a valid OTH
+// return -1 if not a color list
+// nLocation = 0 if in \Color, =1 if in \IncrementList
+int ol_read_colorlist(string strFileName, int& nThemeID, int& nLocation)
 {
 	Tree tr;
     tr.Load(strFileName);
@@ -267,6 +286,16 @@ int ol_read_colorlist(string strFileName)
     if (!tr3) {
         return 0;
     }
+    //------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
+    nThemeID = tr3.ID;
+    if(!_is_color_list_ID(nThemeID))
+    	return -1;
+    string strFilePath = GetFilePath(strFileName);
+	if(strFilePath.Match("*\\Themes\\IncrementList\\"))
+		nLocation = 1;
+	else
+		nLocation = 0;
+    //------
     DWORD rgb;
     vector<DWORD> vd;
     vd = tr3.nVals;
@@ -288,7 +317,6 @@ int ol_read_colorlist(string strFileName)
 	dsRed = vbRed;
 	dsGreen = vbGreen;
 	dsBlue = vbBlue;
-
 	return nColors;
 } 
 
@@ -297,7 +325,7 @@ int ol_read_colorlist(string strFileName)
 // Function: ol_write_colorlist
 // This function writes color values to an Origin color list (OTH) file
 //
-int ol_write_colorlist(string strFileName, int nColors)
+int ol_write_colorlist(string strFileName, int nColors, int nThemeID)
 {
 	Worksheet wks = Project.ActiveLayer();
 	if( !wks.IsValid() )
@@ -326,7 +354,12 @@ int ol_write_colorlist(string strFileName, int nColors)
 	TreeNode tn2 = tn1.AddNode("e", 256);
 	if( !tn2.IsValid() )
 		return 3;
-	TreeNode tn3 = tn2.AddNode("e", 521);
+	//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
+	//TreeNode tn3 = tn2.AddNode("e", 521);
+	if(!_is_color_list_ID(nThemeID))
+		nThemeID = OTID_GLOBAL_COLOR_LIST;
+	TreeNode tn3 = tn2.AddNode("e", nThemeID);
+	//------
 	if( !tn3.IsValid() )
 		return 3;
 
