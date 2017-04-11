@@ -1,0 +1,769 @@
+/////////////////////////////////////////////////////
+// Filename:	pClampApp1.ogs                     //
+// Created:		3 March 2016                       //
+// by Alexander Zholos, Andrei Zholos              //
+// Purpose:	Automation of common pClamp tasks      //
+/////////////////////////////////////////////////////
+
+[ImportCurrent]
+	if (fdlog.multiopen.count==0 || fdlog.multiopen.count==1) doc -N; 	//start with a new project 
+	//if (num1==num2 || fdlog.multiopen.count==0) {
+	if ( num1==num2 && fdlog.multiopen.count>1 ) {
+	/*del -v num1;
+	del -v num2;*/
+	
+	///---Alex 3/17/2016 ORG-14292 P3 FAIL_OPEN_SINGLE_AFTER_MULTILPLE
+	doc -N;
+	}
+	if (exist(num1)==4) {run.section(,OpenFile);}
+	else {
+	fdlog.usegroup(pClamp);
+	//---Alex 3/16/2016
+	fdlog.useType("ABF DAT");
+	
+	///---Alex 11/10/2016
+	fdlog.dlgName$ = "Import Multiple pCLAMP Files";
+	
+	fdlog.multiopen();
+	num2=fdlog.multiopen.count;
+	
+	///---Alex 3/17/2016 Handle Cancel button
+	if( num2==0 )
+		return;
+	
+	num1=0;
+	run.section(,OpenFile);}
+	
+[OpenFile]						
+	if (fdlog.multiopen.count>1) {
+	doc -e p {win -cd;}										//clear previous results
+	doc -e w {win -cd;}
+	newbook;}
+	
+	///---Alex 11/7/2016 UPDATE_COL_NAME_94
+	win -cd;
+	newbook;
+	
+  	num1=$(num1+1);
+	fdlog.get(Q, num1);
+	imppClamp fname:="%Q" trheader:=trheader trfiles.Stimulus:=0 trfiles.ShowTimeCol:=1 trFile.bHoldingDuration:=1
+	Options.sparklines:=0
+	Options.XFBar:=0;
+
+	if(trheader.File1.HeaderInfo.nOperationMode==3) {		//Channel type file (e.g. gap-free)
+	dataset=wks.maxrows;									//Dataset = number of data points
+	if (fdlog.multiopen.count==1)
+	getnumber -s (Number of data points?) dataset (Enter number);
+	else dataset=5000;
+	if (dataset<wks.maxrows) {
+	%M=%H;	
+	%V=%H_%(%H,@C,2);				//Get dataset to copy
+	newbook Reduced_%(%H, @PL);   	//Create new book
+	wks.col1.name$=Time;
+	wks.col2.name$=Ch0;
+	%J=%H_%(%H,@C,2);				//Destination dataset
+	copy -s $(dataset) %V %J;		//Reduce dataset to num points
+	win -a %M;
+	win -cd;}}						//End of channel import
+	%L=%H;							//Data worksheet - %L
+		
+//Remove pre-trigger data	
+	get %L_time -e end; 					
+	for (i=1;i<end;i++) {if (%L_time[i]>=0) break;}
+	if (i>1) {mark -d %L_ep1 -b 1 -e $(i-1);
+	set %L -er wks.maxrows;}							//Delete empty rows
+	
+	if (trheader.File1.HeaderInfo.nOperationMode==3) run.section(,Plot1);
+	if (trheader.File1.HeaderInfo.nOperationMode==5) run.section(,Episode);
+
+[Episode]
+//Create Voltage Protocol 
+ 
+///////////////////////////////////////////////////////////////////////////////////////////
+// To see all pClamp file header values in Script window type trheader.= and press Enter //
+///////////////////////////////////////////////////////////////////////////////////////////
+
+	q1=trheader.File1.HeaderInfo.lActualEpisodes;		//Number of Episodes - q1
+	temp=trheader.File1.HeaderInfo.nEpochType;
+ 	for (jj=1;jj<10;jj++) {
+	if (temp[jj]==0) break;}
+	q2=jj-1;                   							//Number of Epochs - q2 
+	Newbook "Voltage Protocol";
+	%N=%H;                      						//Voltage protocol - %N 
+	wks.multiX=1;
+	repeat wks.ncols (del(col(1)));
+	loop (ii,1,q1) {
+	wks.addCol(Time$(ii));
+	wks.col$(2*ii-1).type=4;
+	wks.addCol(Ep$(ii));
+	col($(2*ii-1))[1]=1;}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Voltages and sample numbers for all episodes. Note that sample numbers should be multiplied by the first clock //
+// interval contained in trheader.File1.HeaderInfo.fADCSequenceInterval in order to convert these values to time  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	HoldV=trheader.File1.HeaderInfo.fDACHoldingLevel; 		//Holding potential
+	Clock=trheader.File1.HeaderInfo.fADCSequenceInterval;	//First clock interval
+	EpochType=trheader.File1.HeaderInfo.nEpochType;			//Epoch type: 1-Step 2-Ramp
+	EpochD=trheader.File1.HeaderInfo.lEpochInitDuration;  	//Epoch initial duration
+	EpochDinc=trheader.File1.HeaderInfo.lEpochDurationInc;  //Epoch duration increment
+	EpochV=trheader.File1.HeaderInfo.fEpochInitLevel;  		//Epoch initial level
+	EpochVinc=trheader.File1.HeaderInfo.fEpochLevelInc;  	//Epoch level increment
+	
+	loop (jj,1,q2) {
+	for (i=1;i<q1+1;i++) {
+	col($(2*i-1))[2*jj]=col($(2*i-1))[2*jj-1]+EpochD[jj]+EpochDinc[jj]*(i-1)-1;	//epoch duration	
+	col($(2*i-1))[2*jj+1]=col($(2*i-1))[2*jj]+1;
+	col($(2*i))[2*jj-1]=EpochV[jj]+EpochVinc[jj]*(i-1);         				//epoch level
+	col($(2*i))[2*jj]=EpochV[jj]+EpochVinc[jj]*(i-1);
+	if (EpochType[jj]==2) col($(2*i))[2*jj-1] = col($(2*i))[2*jj-2];}}
+
+	for (i=1;i<q1+1;i++) {
+	col($(2*i-1))[2*q2+1]=col($(2*i-1))[2*q2]+1;
+	col($(2*i-1))[2*q2+2]=trheader.File1.HeaderInfo.lNumSamplesPerEpisode;	//last sample = number of samples per episode
+	col($(2*i))[2*q2+1]=HoldV[1];      
+	col($(2*i))[2*q2+2]=HoldV[1];}      					//Holding potential
+		
+//This script allows importing user list for interpulse interval (Epoch B - Epoch D) only (e.g. in recovery from inactivation protocol)
+	User=trheader.File1.HeaderInfo.nULEnable;	
+	if (User[1]==1) {										//1=user parameter list enabled  												
+	%Z=trheader.File1.HeaderInfo.sULParamValueList$;		//User param value list: recovery from inactivation protocol
+	user={%Z};
+	loop (jj,6,9) {
+	for (i=1;i<q1+1;i++) {
+	col($(2*i-1))[jj]=col($(2*i-1))[jj]-EpochD[3]-EpochDinc[3]*(i-1)+user[i];}}}
+
+//This script aligns current & voltage protocol as needed for older pClamp versions
+	if (fdlog.multiopen.count==1 && trheader.File1.HeaderInfo.fFileVersionNumber<1.6) { //do for single file only & pClamp before v.8
+	win -a %N;
+	get col(1) - e end;
+	create maxpulse -n 1000;
+	j=0;
+	loop (i,1,q1) {
+	for (ii=3;ii<end+1;ii++) {
+	j=j+1;
+	if (%N_Time$(i)[ii]-%N_Time$(i)[ii-1]==1) maxpulse[j]=%N_Ep$(i)[ii]-%N_Ep$(i)[ii-1];
+	else j=j-1;}}
+	limit maxpulse;
+	if (abs(limit.ymax)>=abs(limit.ymin)) m1=limit.ymax;
+	else m1=limit.ymin;
+	loop (i,1,q1) {
+	for (ii=3;ii<end+1;ii++) {
+	if (%N_Time$(i)[ii]-%N_Time$(i)[ii-1]==1 && (%N_Ep$(i)[ii]-%N_Ep$(i)[ii-1])==$(m1)) {
+	k1=$(i); 						//episode number with maximal voltage step
+	k2=$(ii);						//index of maximal step
+	break;}}}
+	k3=int((%N_Time$(k1)[k2-1]-%N_Time$(k1)[k2-2])/5+%N_Time$(k1)[k2-2]);	//offset calculation
+	k4=int(%N_Time$(k1)[k2-1]-(%N_Time$(k1)[k2-1]-%N_Time$(k1)[k2-2])/5);
+	k5=int((%N_Time$(k1)[k2+1]-%N_Time$(k1)[k2])/2+%N_Time$(k1)[k2]);
+	sum(%L_ep$(k1) -b $(k3) -e $(k4));	
+	for (ii=k4;ii<k5;ii++) {
+	if ((%L_ep$(k1)[ii+1]-%L_ep$(k1)[ii])<$(-10*sum.sd) || (%L_ep$(k1)[ii+1]-%L_ep$(k1)[ii])>$(10*sum.sd)) 
+	break;}
+	offset=%N_Time$(k1)[k2]-ii-1;
+	del -v k*;
+	del -v m*;
+	//getnumber -s (Offset value?) offset (Enter offset);	//confirm offset estimate is Ok
+	loop (ii,1,q1) {
+	%N_Time$(ii)-=offset;								//offset correction
+	%N_Time$(ii)[1]=1;
+	get %L_time -e end;
+	%N_Time$(ii)[2*q2+2]=$(end);}
+	}	
+	run.section(,Plot2);
+	
+[Plot1]							//gap-free data plotting
+	menu -e 32995;				//close Results Log
+	//win -b Graph pClampApp1;
+	
+	win -t p "%@ASimple pCLAMP Analyzer\SPCA";
+	
+	
+	%K=%H;						//Plot - %K
+	%H!page.active=2;      		//set layer 2 active
+	layer -w %L 200;      		//plot currents
+	@MP=1;
+	mark -u;
+	layer -at;
+	line1.x=(x2-x1)*0.1;
+	
+	///---Alex 3/17/2016 Update initial cursor value
+	text1.text$="Cursor 1: %(LF)$(line1.x,.1) ms";
+	
+	line2.x=(x2-x1)*0.9;
+	
+	///---Alex 3/17/2016 Update initial cursor value
+	text2.text$="Cursor 2: %(LF)$(line2.x,.1) ms";
+	
+	%H!page.active=1; layer -d;
+	%H!page.active=2; layer -d;
+	%H!page.active=2; layer -d;
+	layer 60 60 20 20;	
+	if (fdlog.multiopen.count>1) {
+	type -a "%Q $(num1)/$(num2)";}
+	
+[Plot2]							//data plotting in case of single file selected
+	//win -b Graph pClampApp1;
+	
+	win -t p "%@ASimple pCLAMP Analyzer\SPCA";
+	
+	%K=%H;						//Plot - %K
+	%H!page.active=2;      		//set layer 2 active
+	layer -w %L 200;      		//plot currents
+	@MP=1;
+	mark -u;
+	layer -at;
+	line1.x=(x2-x1)*0.1;
+	
+	///---Alex 3/17/2016 Update initial cursor value
+	text1.text$="Cursor 1: %(LF)$(line1.x,.1) ms";
+	
+	line2.x=(x2-x1)*0.9;
+	
+	///---Alex 3/17/2016 Update initial cursor value
+	text2.text$="Cursor 2: %(LF)$(line2.x,.1) ms";
+	
+	menu -e 32995;				//close Results Log
+	%H!page.active=1;           //set layer 1 active
+	layer -w %N 200;   			//plot voltage steps
+	loop (jj,1,q1) {
+	%Z=%N_ep$(jj);
+	limit %Z;}
+	layer.y.firstTick=limit.ymin;
+	layer.y.inc=nint((limit.ymax-limit.ymin)/50)*10;
+	if (y2<5*layer.y.inc-abs(y1)) {y2=5*layer.y.inc-abs(y1)};
+	if (fdlog.multiopen.count>1) {
+	type -a "%Q $(num1)/$(num2)";}
+	menu -e 32995;				//close Results Log
+	
+[Filter]						// This script performs data smoothing
+	s=0;                        // No smoothig by default
+	getnumber -s (smooth?) s (Enter n points for smoothing);
+	
+	if (trheader.File1.HeaderInfo.nOperationMode==5) {			//Episode type
+	for (i=1;i<q1+1;i++) {          
+	curve.data$=%L_ep$(i);
+	curve.result$=%L_ep$(i);
+	curve.smoothpts = s;
+	curve.adjave();}
+	%H!page.active=1;
+	layer -at;}
+	
+	if (trheader.File1.HeaderInfo.nOperationMode==3) {			//Channel type
+	curve.data$=%L_Ch0;
+	curve.result$=%L_Ch0;
+	curve.smoothpts = s;
+	curve.adjave();
+	%H!page.active=1;
+	layer -at;}
+
+[MaskCap]				// This script masks capacitive artefacts
+	getnumber -s (Capacitive current in ms?) Cm (Exclude capacitive current);
+	Cm1=Cm*1000/Clock;					//number of samples of capacitive artefact
+	
+	///---Alex 10/27/2016 ORG-14292 S2 UPDATE_MASK_CAP
+	loop (jj,1,q2) {					//Alex - new script
+	for (i=1;i<q1+1;i++) {
+	if (%N_Ep$(i)[2*jj+1] != %N_Ep$(i)[2*jj]) { 
+	range rr = [%L]Sheet1!col($(i+1));
+	r1=%N_Time$(i)[2*jj+1];
+	r2=%N_Time$(i)[2*jj+1]+Cm1;
+	mark -w1 rr[$(r1):$(r2)];
+	}}};
+	
+	@MP=1;
+	mark -u;
+	%H!page.active=2;
+	layer -at;
+
+[UnmaskCap] 						//This script removes masks
+	win -a %L;
+	mark -sa %C;
+	win -a %K;
+	%H!page.active=2;
+	layer -at;
+	
+[PulseIV]							//This script measures and plots I-V data
+	%H!page.active=2;      			//set layer 2 active
+	if (line1.x>line2.x) {
+	type -b "Error - position cursors: 1 - left, 2 - right";
+	break;} 
+	
+	//run.loadOC("IVmeasurement");
+	run.loadOC("%@ASimple pCLAMP Analyzer\IVmeasurement");
+	
+	IVmeasurement;
+	work -b IV;
+	clearworksheet %H;
+	wks.labels();
+	wks.col$(2).label$=IV;
+	for (i=1;i<q1+1;i++) {     		//Membrane potentials in IV_A
+	IV_A[i]=EpochV[epoch]+EpochVinc[epoch]*(i-1);}
+	Win -a %K; 
+	%H!page.active=2;
+	s1=xindex(line1.x,%L_ep1);
+	s2=xindex(line2.x,%L_ep1);
+	
+	///---Alex 3/17/2016 ORG-14292 P1 VAR_NAMES_CONFLICT
+	//if (num1==1) {
+	if (num1t==1) {
+	
+	loop (jj,1,q1) {
+	limit %L_ep$(jj) -b s1 -e s2;
+	IV_B[jj]=limit.ymin;}}
+	
+	if (num2t>0) {
+	loop (jj,num2t,num3) {
+	limit %L_ep$(jj) -b s1 -e s2;
+	IV_B[jj]=limit.ymin;}}
+	
+	if (num4==1) {
+	loop (jj,1,q1) {
+	limit %L_ep$(jj) -b s1 -e s2;
+	IV_B[jj]=limit.ymax;}}
+	
+	if (num5>0) {
+	loop (jj,num5,num6) {
+	limit %L_ep$(jj) -b s1 -e s2;
+	IV_B[jj]=limit.ymax;}}	
+	
+	if (num7==1) {
+	loop (jj,1,q1) {
+	%Z=%L_ep$(jj) -b s1 -e s2;
+	sum(%Z);
+	IV_B[jj]=sum.mean;}}
+	
+	if (num8>0) {
+	loop (jj,num8,num9) {
+	%Z=%L_ep$(jj) -b s1 -e s2;
+	sum(%Z);
+	IV_B[jj]=sum.mean;}}
+	
+	if (num10==1) {
+	loop (jj,1,q1) {
+	limit %L_ep$(jj) -b s1 -e s2;
+	if (abs(limit.ymin)>abs(limit.ymax)) 
+	IV_B[jj]=limit.ymin;
+	else
+	IV_B[jj]=limit.ymax;}}	
+	
+	%H!page.active=3;			//set layer 3 active
+	layer -i202 IV_B;    		//plot I-V curve
+	layer -at;
+//XY scales and major ticks
+	layer.x.inc=int((x2-x1)/50)*10;
+	sc1=layer.x.to/layer.x.inc;
+	if (sc1<0) sc1-=1;
+	if ((sc1)!=int(sc1)) {
+	x2=(1+int(sc1))*layer.x.inc;
+	};
+	if (exist(sc2)==0) {
+	sc2=x1;
+	x1=sc2-abs(sc2/20);
+	};
+	
+	sc3=layer.y.from/layer.y.inc;
+	if ((sc3)!=int(sc3)) {
+	y1=(int(sc3)-1)*layer.y.inc;
+	};
+	sc4=layer.y.to/layer.y.inc;
+	if ((sc4)!=int(sc4)) {
+	y2=(int(sc4)+1)*layer.y.inc;
+	};
+	draw -d 1 -l -v 0;
+	draw -d 1 -l -h 0;
+	
+[LeakCorrection]						//Performs liner fit to determine input resistance and subtract leak current
+	NPoints=3;
+	getnumber -s (Number of data points of leak current?) NPoints (Enter NPoints); 	//Number of points for leak approxiamtion
+	loop (jj,1,NPoints) {
+	%Z=%L_ep$(jj) -b s1 -e s2;
+	sum(%Z);
+	IV_B[jj]=sum.mean;	
+	};
+	work -b IV;
+	if (wks.ncols==2) {work -a 2};
+	lr.chkLinearr=5;
+	LR -b IV_B;        					//Perform linear fit with automatic search for linearity on the beginning linear region of I-V curve
+	wks.col$(2).label$=leak corrected I-V;
+	wks.col$(3).label$=leak I-V;
+	wks.col$(4).label$=original I-V;
+	wks.labels();
+	IV_C=lr.a+lr.b*IV_A;      			//calculate leak currents
+	InRes=1/lr.b;               		//Input resistance
+	IV_D=IV_B;
+	IV_B=IV_D-IV_C; 					//I-V leak correction
+	Win -a %K;               			//return to graph
+	%H!page.active=3;      				//set layer 3 active
+	layer -i200 IV_C;        			//plot leak - line
+	set IV_C -d 5;
+	layer -i202 IV_D;        			//plot leak-corrected I-V
+	set IV_D -c 19;
+	layer -ip IV_B;
+	label -sa -p 5 0 -b 1 -s -n InputR (Rin = $($(InRes),.2) GOhm);
+	inputr.fsize=12;
+	layer -ip IV_B;
+
+[Activation]									//Calculate and fit activation (conductance) curve
+	lr.chkLinearr=20;							//Sets the amount of tolerance in the automatic determination of linear segments 
+	LR -e IV_B;        							//Perform linear fit with automatic search for linearity
+	Erev=-lr.a/lr.b;               				//Erev
+	getnumber -s (Erev ?) Erev (Enter Erev); 	//provides manual input for Erev if necessary
+	work -b Act;
+	Act_A=IV_A;
+	Act_B=IV_B/(IV_A-Erev);  					//calculates conducatnce
+	win -a %K;
+	%H!page.active=4;         	
+	layer -i201 Act_B; 							//plot conductance data points
+	layer -at;
+	
+	///---Alex 3/16/2016 Pop up a dailog for prompt of data marker
+	type -b "Please click on a data point to activate the marker lines.";
+	
+//Fitting data using Boltzmann function
+	dotool 4;
+	def pointproc { 
+	nlbegin iy:=(1)[$(mks1):$(mks2)] func:=Boltzmann nltree:=tt; 	//initialize fitting the active plot using Boltzmann model
+	tt.lbon_A1=1;								//enable lower bounds for A1
+	tt.lb_A1=0;									//A1>=0
+	nlfit;
+	/*nlgui gg 1;	
+	gg.quantities.Parameters.value=0;
+	gg.quantities.Parameters.error=0;
+	gg.ResAnalysis.Regular=0;
+	gg.quantities.ANOVAtable=0;;
+	gg.graph1.doplot=0;
+	gg.residuals.graph2=0;
+	gg.output.plotsettings.pasteresulttable.use=0;
+	nlgui gg 0;
+	nlend 1;*/
+	
+	///---Alex 3/16/2016 Create fitted data
+	range -wx rwx=(1)[$(mks1):$(mks2)];
+	double dx1, dx2;
+	dx1=min(rwx);
+	dx2=max(rwx);
+	newsheet book:=Act;
+	range rx=[Act]2!col(1);
+	range ry=[Act]2!col(2);
+	rx=data(dx1,dx2,(dx2-dx1)/1000);
+	ry=fit(rx);
+	layer -i ry;
+	set ry -c 2; 
+	layer -at;
+	
+	nlend 0;
+	
+	work -b Results;							//Fitting results Table
+	Results_A[1]$=Rin;
+	
+	///---Alex 3/16/2016 InRes was unknown if Leak Correction was not called
+	if( exist(InRes,4) )
+		Results_B[1]=$(InRes,.2);
+	
+	Results_A[2]$=Erev;
+	Results_B[2]=$(Erev,.2);
+	Results_A[3]$=Gmax;
+	Results_B[3]=$($(tt.A2),.2);
+	Results_A[4]$=Act V1/2;
+	Results_B[4]=$($(tt.x0),.2);
+	Results_A[5]$=Act k;
+	Results_B[5]=$($(tt.dx),.2);
+	win -a %K;
+	label -sa -p 5 0 -b 1 -s -n Results 
+	"Gmax = $(tt.A2,.1) nS \n V\-(0.5) = $(tt.x0,.1) mV \n k = $(tt.dx,.1) mV";
+	results.fsize=12;
+	
+// Y scale and major ticks
+	
+	%H!page.active=4;
+	
+	///---Alex 3/17/2016 For inc=0, it can set a better default inc.
+	y1=0;
+	
+	layer.y.inc=int((y2-y1)/50)*10;
+	
+	///---Alex 3/17/2016 Pause to wait for scale update
+	sec -p 0.1;
+	
+	sc5=layer.y.to/layer.y.inc;
+	if ((sc5)!=int(sc5)) {
+	y2=(1+int(sc5))*layer.y.inc;
+	};
+	
+	///---Alex 3/17/2016 Rescale should be within dotool response
+	dotool 0;
+	};
+
+[Inactivation]
+	work -b IV;
+	sort -w IV IV_A;							//sort worksheet in ascending order
+	if (WKS.NCOLS==2) {
+	work -a 1;
+	wks.col$(3).label$=Inact;}
+	wks.labels();
+	win -a %K;
+	NPlateau=3;
+	getnumber -s (Number of a plateau data points?) NPlateau (Enter NPlateau); 	//Number of points for averaging maximum
+	sum(IV_B -b 1 -e NPlateau);
+	IV_C=IV_B/$(sum.mean);  					//normalise by mean value of Nplateau data points
+	%H!page.active=4;         	
+	layer -i201 IV_C; 							//plot inactivation data points
+	layer -at;
+	nlbegin iy:=1 func:=Boltzmann nltree:=tt; 	//initialize fitting the active plot using Boltzmann model
+	tt.A1=1;tt.f_A1=1;							//fix A1=1
+	tt.lbon_A2=1;								//enable lower bounds for A2
+	tt.lb_A2=0;									//A2>=0
+	nlfit;
+	/*nlgui gg 1;	
+	gg.quantities.Parameters.value=0;
+	gg.quantities.Parameters.error=0;
+	gg.ResAnalysis.Regular=0;
+	gg.quantities.ANOVAtable=0;;
+	gg.graph1.doplot=0;
+	gg.residuals.graph2=0;
+	gg.output.plotsettings.pasteresulttable.use=0;
+	nlgui gg 0;
+	nlend 1;*/
+	
+	///---Alex 3/16/2016 Fitted Curve
+	range -wx rwx=1;
+	double dx1, dx2;
+	dx1=min(rwx);
+	dx2=max(rwx);
+	newsheet book:=IV;
+	range rx=[IV]2!col(1);
+	range ry=[IV]2!col(2);
+	rx=data(dx1,dx2,(dx2-dx1)/1000);
+	ry=fit(rx);
+	layer -i ry;
+	set ry -c 2; 
+	layer -at;
+
+	nlend 0;
+	
+	work -b Results;							//Fitting results Table
+	Results_A[1]$=NonInact %;
+	Results_B[1]=$($(tt.A2*100),.2);
+	Results_A[2]$=Inact V1/2;
+	Results_B[2]=$($(tt.x0),.2);
+	Results_A[3]$=Inact k;
+	Results_B[3]=$($(tt.dx),.2);
+	win -a %K;
+	label -sa -p 60 0 -b 1 -s -n Results 
+	"NonInact = $(tt.A2*100,.1) % \n V\-(0.5) = $(tt.x0,.1) mV \n k = $(tt.dx,.1) mV";
+	results.fsize=12;
+	y1=0;y2=1;
+	text3.text$=h;
+	
+[RampIV]	//This script creates I-V curves measured by voltage-ramps
+//Finds ramp epoch
+	
+	/*for (jj=1;jj<q2+1;jj++) {
+	if (EpochType[jj]==2) break;}
+	epoch=jj;
+	getnumber -s (Ramp Epoch?) Epoch (Enter Ramp Epoch: A-1, B-2 etc);*/ 	//Manual choice of ramp epoch
+	
+	///---Alex 3/17/2016 Find all ramp epoch
+	Dataset dsRamp;
+	vfind ix:=EpochType value:=2 ox:=dsRamp;
+	if( dsRamp.GetSize()<1 )
+	{
+		type -b "No Ramp Epoch was found.";
+		return;
+	}
+	if( dsRamp.GetSize()==1 )
+	{
+		Epoch = dsRamp[1];
+	}
+	else
+	{
+		StringArray sa;
+		sa.Append("(A-1)|(B-2)|(C-3)|(D-4)|(E-5)|(F-6)|(G-7)|(H-8)|(I-9)", "|");
+
+		int kk=dsRamp[1];
+		string strList=sa.GetAt(kk)$;
+		int ii;
+		for( ii=2; ii<=dsRamp.GetSize(); ii++ )
+		{
+			kk=dsRamp[ii];
+			strList$ = strList$ + " " + sa.GetAt(kk)$;
+		}
+		
+		int iramp = 1;
+		getn (Ramp Epoch) iramp:strList$ (Please choose a Ramp Epoch.);
+		Epoch = dsRamp[iramp];
+	}
+	
+	dsRamp.SetSize()=0;
+	
+	win -a %L;
+	work -d IV;
+	mark -d IV_time -b %N_time1[epoch*2+1] -e wks.maxrows;
+	mark -d IV_time -b 1 -e %N_time1[epoch*2-2];
+	for (i=1;i<EpochD[epoch]+1;i+1) {
+	IV_time[i]=EpochV[epoch-1]+(i-1)* ((EpochV[epoch]-EpochV[epoch-1])/(EpochD[epoch]-1));
+	}
+	wks.col1.name$=Voltage;
+	wks.col1.label$=mV;
+	%O=%H;						//%O - ramp IV data
+	set %O -er wks.maxrows;		//remove rows with no data - this sets number of rows to the last containing data
+	win -a %K;     				//return to graph
+	%H!page.active=3;      		//set layer 3 active
+	layer -w %O 200;      		//plot I-Vs
+	layer -at;
+	sc1=$(x1); 
+	sc2=$(x2);
+	layer.x.rescaleMargin=5;
+	layer -at;
+	x2=sc2;
+	layer.x.firstTick=sc1;
+	layer.x.inc=nint((sc2-sc1)/50)*10;
+	if (sc2>5*layer.x.inc-abs(sc1)) {x2=6*layer.x.inc-abs(sc1)};
+	layer.x.rescale=1;
+	draw -d 1 -l -v 0;
+	draw -d 1 -l -h 0;
+	
+[RampConductance]				//This script calculates conductance curves from ramp data
+//Determine Erev
+	work -b Erev;
+	win -a %O;
+	sort -wd %O col(1);   					//Sort worksheet in descending order
+	get col(1) -e end;
+	m=wks.ncols;
+	m1=int(1/(IV_voltage[1]-IV_voltage[2]));
+	loop (jj,1,m-1) {
+	for (i=1;i<end;i+1) {
+	if (%O_ep$(jj)[i]<0) break;
+	m2=i;}
+	LR %O_ep$(jj) -b $(m2-m1) -e $(m2+m1);	//Fit linear around +/-1 mV of Erev 
+	Erev_B[jj]=-lr.a/lr.b;
+	Erev_A[jj]=m2;}
+//Create conductance curves
+	win -a %O;
+	work -d Conductance;
+	%P=%H;									//%P - Conductance curves
+	for (i=2;i<m+1;i+1) {
+	col($(i))/=col(1)-Erev_B[i-1];
+	s=Erev_A[i-1];
+	ave -l col($(i)) -b $(s-5*m1) -e $(s+5*m1);
+	ave -n 3 col($(i)) -b $(s-k) -e $(s+k);  //smoothes data points within +/-5 mV around Erev
+	nn=wks.nrows;							// nn number of rows
+	}
+	numcol=wks.ncols;
+	win -a %K;     				//return to graph
+	%H!page.active=4;      		//set layer 4 active
+	layer -w %P 200;      		//plot G-V curves
+	layer -at;
+//Fitting the Boltzamnn function	
+	getYesNo (Perform Boltzmann fit?) MyChoice (Fit session);	//Choice to fit Boltzmann function
+	if (MyChoice==1) {
+	/*GetN (Current number of data points per trace) nn (Skip every N points (0 to fit all data points)) f (Enter Number of Data Points to Skip When Fitting);
+	win -a %P;
+	sort -w %P col(1);			//Sort worksheet in ascending order
+	%C=col($(1));
+	get %C -e end;
+	if (f>0) {
+	k=int(end/f);
+	if (end>k*f) mark -d %C -b $(k*f+1) -e end; 
+	loop (num,1,k-1)
+	{
+	mark -d %C -b $(num+1) -e $(num+f-1);
+	};
+	mark -d %C -b $(num+1) -e $(num+f-2);
+	set %H -er wks.maxrows;		//remove rows with no data - this sets number of rows to the last containing data
+	}
+	win -a %K;     				//return to graph
+	%H!page.active=4;*/      		//set layer 4 active
+	%Z=1;
+	for (i=2;i<q1+1;i++) {
+	%Z=%Z,$(i);}												//define datasets to be fitted
+	nlbegin iy:=(%Z) func:=Boltzmann nltree:=fit mode:=global;  //Boltzmann fit with shared parameters
+	getYesNo (Fit with shared slope?) Shared;					//User input to choose shared slope
+	if (Shared==1) {
+	fit.s4=1; 													//set slope = shared
+	};
+	//nlpara;													//open the Fitting Parameter dialog													
+	fit.s1=1;													//set A1 = shared
+	fit.lbon_A1=1;												//enable lower bounds for A1
+	fit.lb_A1=0;												//A1>=0
+	fit.s1=0;													//set A1 = independent
+	nlfit;														//fit data													
+	
+	/*nlgui gg 1;
+	gg.quantities.Parameters.value=0;
+	gg.quantities.Parameters.error=0;
+	gg.ResAnalysis.Regular=0;
+	gg.quantities.ANOVAtable=0;
+	gg.graph1.doplot=0;
+	gg.residuals.graph2=0;
+	gg.output.plotsettings.pasteresulttable.use=0;
+	nlgui gg 0;
+	nlend 1;*/
+	
+	///---Alex 3/16/2016 Create fitted data
+	range -wx rwx=1;
+	double dx1, dx2;
+	dx1=min(rwx);
+	dx2=max(rwx);
+	newsheet book:=Conductance cols:=q1+1;
+	range rx=[Conductance]2!col(1);
+	rx=data(dx1,dx2,(dx2-dx1)/1000);
+	
+	for( i=2; i<=q1+1; i++ )
+	{
+		range ry=[Conductance]2!wcol(i);
+		ry=fit(rx,i-1);
+	}
+	
+	layer -w [Conductance]2! 200;
+	layer -at;
+	
+	nlend 0;
+	
+// Y scale and major ticks
+	%H!page.active=4;
+	
+	///---Alex 3/16/2016 Fixed the bug in debug for ticks
+	y1=0;
+
+	layer.y.inc=int((y2-y1)/50)*10;
+	
+	///---Alex 3/16/2016 Pause to wait for graph tick update when inc=0
+	sec -p 0.1;
+	
+	sc6=layer.y.to/layer.y.inc;
+	
+	if ((sc6)!=int(sc6)) {
+	y2=(1+int(sc6))*layer.y.inc;	
+	};
+	//y1=0;
+	work - b FitParam;									//Save results										
+	work -a 3;
+	wks.col$(1).label$=Episode #;
+	wks.col$(2).label$=A1;
+	wks.col$(3).label$=A2;
+	wks.col$(4).label$=V0.5;
+	wks.col$(5).label$=Slope;
+	wks.labels();
+	FitParam_A[1]=1;
+	FitParam_B[1]=$(fit.A1);
+	FitParam_C[1]=$(fit.A2);
+	FitParam_D[1]=$(fit.x0);
+	FitParam_E[1]=$(fit.dx);
+	for (i=1;i<q1;i++) {
+	FitParam_A[i+1]=i+1;
+	FitParam_B[i+1]=$(fit.A1_$(i+1));
+	FitParam_C[i+1]=$(fit.A2_$(i+1));
+	FitParam_D[i+1]=$(fit.x0_$(i+1));
+	FitParam_E[i+1]=$(fit.dx_$(i+1));
+	}
+	win -a %K;     									//return to graph
+	
+	///---Alex 3/10/2016 Handle Cancel button
+	}
+	
+[OpenHelp]
+	run.loadOC("%@ASimple pCLAMP Analyzer\IVmeasurement");
+	open_ppt_help( "Tutorial.pptx", "%@ASimple pCLAMP Analyzer" );

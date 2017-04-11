@@ -1,0 +1,158 @@
+// Filename: FileBrowser.ogs		//
+// Created: 3 February 2017 		//
+// by Alexander Zholos				//
+// Purpose:	File Browser for Origin	//
+//////////////////////////////////////
+
+[Open]
+	if (%k==0/0 || %k==0 || %z>=%k)
+	{
+	fdlog.reset();
+	fdlog.ShowComment=0;
+	fdlog.dlgName$=Select Multiple Project Files;
+	fdlog.UseGroup(Origin);
+	fdlog.useType("OPJ");
+	//fdlog.useType("OPJ,ORG");
+	FDlog.numtypes=2;
+	FDlog.Type1$ = "[*.OPJ] *.OPJ";
+	//FDlog.Type2$ = "[*.ORG] *.ORG";
+	fdlog.multiOpen();
+	%k=$(fdlog.MultiOpen.Count);
+	if (%k>=1) {
+	%z=1;
+	FDlog.Get(A, 1);
+	doc -o %A;
+	type -a "$(%z) out of $(%k)";
+	}
+	}
+	else
+	{
+	%z=$(%z+1);
+	FDlog.Get(A, $(%z));
+	doc -o %A;
+	type -a "$(%z) out of $(%k)";
+	}
+	if (%z==%k)
+	{
+	%k=0/0;
+	type -b "Last Project";
+	}
+
+[Play]
+	type -h;
+	break -be File viewing progress;
+	if (%k==0/0) {
+	break -e;
+	type -b "Select Projects";
+	break;
+	}
+	if (%z==%k) {
+	break -e;
+	type -b "Last Project";
+	break;
+	}
+	break -r 0 %k;
+	break -p %Z;
+	%m=1;
+	loop (jj,%Z,%k-1) {
+	%z=$(%z+1);
+	getfile -g %z;
+	doc -o %A;
+	break -p %Z;
+	sec -p 5;						//pause for 5 s
+	if (%z==%k) {
+	%m=0;
+	break -e;
+	type -b "Last Project";
+	}
+	}
+	%m=0;
+
+[Last]
+	if (%k==0/0) {
+	break -e;
+	type -b "Open Projects";
+	break;
+	}
+	%Z=%k;
+	getfile -g %z;
+	doc -o %A;
+	type -a "$(%z) out of $(%k)";
+	%m=0;
+	break -e;
+	
+[Pause]
+	if (%m==1) {
+	break -be Pause for 1 min (press "End" to continue);
+	break -r 1 60;
+	for (ii=1;ii<=60;ii++) {
+	break -p ii;   				//display progress
+    sec -p 1;   				//pause for 1 s
+	}	
+	break -be File viewing progress;
+	break -r 0 %k;
+	}
+	
+[First]
+	if (%k==0/0) {
+	break -e;
+	type -b "Open Projects";
+	break;
+	}
+	%Z=1;
+	getfile -g %z;
+	doc -o %A;
+	type -a "$(%z) out of $(%k)";
+	%m=0;
+	break -e;
+
+[Reverse]
+	type -h;
+	break -be File viewing progress;
+	if (%k==0/0) {
+	break -e;
+	type -b "Select Projects";
+	break;
+	}
+	if (%z==1) {
+	break -e;
+	type -b "First Project";
+	break;
+	}
+	break -r 0 %k;
+	break -p %Z;
+	%m=1;
+	loop (jj,1,%Z-1) {
+	%z=$(%z-1);
+	getfile -g %z;
+	doc -o %A;
+	break -p %Z;
+	sec -p 5;				//pause for 5 s
+	if (%z==1) {
+	%m=0;
+	break -e;
+	type -b "First Project";
+	}
+	}
+	%m=0;
+	
+[Number]
+	if (%k==0/0) {
+	break -e;
+	type -b "Open Projects";
+	break;
+	}
+	break -e;
+	getnumber -s (Open Project #) FileNum (Enter number);
+	%Z=$(FileNum);
+	getfile -g %z;
+	doc -o %A;
+	type -a "$(%z) out of $(%k)";
+	
+[Exit]
+	%k=0/0;
+	break -e;
+	doc -n;
+
+[Help]
+	win -t plot FileBrowser Help;

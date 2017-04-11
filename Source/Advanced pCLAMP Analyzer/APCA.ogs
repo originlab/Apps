@@ -1,0 +1,1322 @@
+//////////////////////////////////////////////////////
+// Filename: pClampApp2.ogs 						//
+// Created: 15 July 2016 							//
+// by Prof Alexander Zholos							//
+// Purpose:	Automation of some complex pClamp tasks	//
+//////////////////////////////////////////////////////
+
+[ImportCurrent]
+	if (fdlog.multiopen.count==0 || fdlog.multiopen.count==1) doc -N; 	//start with a new project 
+	if (num1==num2 && fdlog.multiopen.count>1) {
+	doc -N;
+	}
+	doc -e p {win -cd;}										//clear previous results
+	doc -e w {win -cd;}
+	if (exist(num1)==4) {run.section(,OpenFile);}
+	else {
+	fdlog.usegroup(pClamp);
+	fdlog.useType("ABF DAT");
+	
+	///---Alex 11/10/2016
+	fdlog.dlgName$ = "Import Multiple pCLAMP Files";
+	
+	fdlog.multiopen();
+	num2=fdlog.multiopen.count;
+	
+	if( num2==0 )
+	return;
+	
+	num1=0;
+	run.section(,OpenFile);}
+	
+[OpenFile]						
+	if (fdlog.multiopen.count>1) {
+	doc -e p {win -cd;}										//clear previous results
+	doc -e w {win -cd;}
+	}
+run.section(,Import);
+[Import]
+	newbook;
+  	num1=$(num1+1);
+	fdlog.get(Q, num1);
+	imppClamp fname:="%Q" trheader:=trheader trfiles.Stimulus:=0 trfiles.ShowTimeCol:=1 trFile.bHoldingDuration:=1
+	Options.sparklines:=0
+	Options.XFBar:=0;
+
+	if(trheader.File1.HeaderInfo.nOperationMode==3) {		//Channel type file (e.g. gap-free)
+	dataset=wks.maxrows;									//Dataset = number of data points
+	if (fdlog.multiopen.count==1)
+	getnumber -s (Number of data points?) dataset (Enter number);
+	else dataset=5000;
+	if (dataset<wks.maxrows) {
+	%M=%H;	
+	%V=%H_%(%H,@C,2);				//Get dataset to copy
+	newbook Reduced_%(%H, @PL);   	//Create new book
+	wks.col1.name$=Time;
+	wks.col2.name$=Ch0;
+	%J=%H_%(%H,@C,2);				//Destination dataset
+	copy -s $(dataset) %V %J;		//Reduce dataset to num points
+	win -a %M;
+	win -cd;}}						//End of channel import
+	%L=%H;							//Data worksheet - %L
+	
+//Remove pre-trigger data	
+	get %L_time -e end; 					
+	for (i=1;i<end;i++) {if (%L_time[i]>=0) break;}
+	if (i>1) {mark -d %L_ep1 -b 1 -e $(i-1);
+	set %L -er wks.maxrows;}							//Delete empty rows
+	
+	if (trheader.File1.HeaderInfo.nOperationMode==3) run.section(,Plot1);
+	if (trheader.File1.HeaderInfo.nOperationMode==5) run.section(,Episode);
+
+[Episode]
+//Create Voltage Protocol 
+ 
+///////////////////////////////////////////////////////////////////////////////////////////////
+// To see all pClamp file header values open Script window & type trheader.= and press Enter //
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+	q1=trheader.File1.HeaderInfo.lActualEpisodes;		//Number of Episodes - q1
+	temp=trheader.File1.HeaderInfo.nEpochType;
+ 	for (jj=1;jj<10;jj++) {
+	if (temp[jj]==0) break;}
+	q2=jj-1;                   							//Number of Epochs - q2 
+	newbook "Voltage Protocol_%(%L, @PL)";
+	%N=%H;                      						//Voltage protocol - %N 
+	wks.multiX=1;
+	repeat wks.ncols (del(col(1)));
+	loop (ii,1,q1) {
+	wks.addCol(Time$(ii));
+	wks.col$(2*ii-1).type=4;
+	wks.addCol(Ep$(ii));
+	col($(2*ii-1))[1]=1;}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Voltages and sample numbers for all episodes. Note that sample numbers should be multiplied by the first clock //
+// interval contained in trheader.File1.HeaderInfo.fADCSequenceInterval in order to convert these values to time  //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	HoldV=trheader.File1.HeaderInfo.fDACHoldingLevel; 				//Holding potential
+	Clock=trheader.File1.HeaderInfo.fADCSequenceInterval;			//First clock interval
+	EpochType=trheader.File1.HeaderInfo.nEpochType;					//Epoch type: 1-Step 2-Ramp
+	EpochD=trheader.File1.HeaderInfo.lEpochInitDuration;  			//Epoch initial duration
+	EpochDinc=trheader.File1.HeaderInfo.lEpochDurationInc;  		//Epoch duration increment
+	EpochV=trheader.File1.HeaderInfo.fEpochInitLevel;  				//Epoch initial level
+	EpochVinc=trheader.File1.HeaderInfo.fEpochLevelInc;  			//Epoch level increment
+	
+	loop (jj,1,q2) {
+	for (i=1;i<q1+1;i++) {
+	col($(2*i-1))[2*jj]=col($(2*i-1))[2*jj-1]+EpochD[jj]+EpochDinc[jj]*(i-1)-1;	//epoch duration	
+	col($(2*i-1))[2*jj+1]=col($(2*i-1))[2*jj]+1;
+	col($(2*i))[2*jj-1]=EpochV[jj]+EpochVinc[jj]*(i-1);         				//epoch level
+	col($(2*i))[2*jj]=EpochV[jj]+EpochVinc[jj]*(i-1);
+	if (EpochType[jj]==2) col($(2*i))[2*jj-1] = col($(2*i))[2*jj-2];}}
+
+	for (i=1;i<q1+1;i++) {
+	col($(2*i-1))[2*q2+1]=col($(2*i-1))[2*q2]+1;
+	col($(2*i-1))[2*q2+2]=trheader.File1.HeaderInfo.lNumSamplesPerEpisode;	//last sample = number of samples per episode
+	col($(2*i))[2*q2+1]=HoldV[1];      
+	col($(2*i))[2*q2+2]=HoldV[1];}      					//Holding potential
+		
+//This script allows importing user list for interpulse interval (Epoch B - Epoch D) only (e.g. in recovery from inactivation protocol)
+	User=trheader.File1.HeaderInfo.nULEnable;	
+	if (User[1]==1) {										//1=user parameter list enabled  												
+	%A=trheader.File1.HeaderInfo.sULParamValueList$;		//User param value list: recovery from inactivation protocol
+	user={%A};
+	loop (jj,6,9) {
+	for (i=1;i<q1+1;i++) {
+	col($(2*i-1))[jj]=col($(2*i-1))[jj]-EpochD[3]-EpochDinc[3]*(i-1)+user[i];}}}
+
+//This script aligns current & voltage protocol as needed for older pClamp versions
+	if (trheader.File1.HeaderInfo.fFileVersionNumber<1.6) { //do for pClamp before v.8
+	win -a %N;
+	get col(1) - e end;
+	create maxpulse -n 1000;
+	j=0;
+	loop (i,1,q1) {
+	for (ii=3;ii<end+1;ii++) {
+	j=j+1;
+	if (%N_Time$(i)[ii]-%N_Time$(i)[ii-1]==1) maxpulse[j]=%N_Ep$(i)[ii]-%N_Ep$(i)[ii-1];
+	else j=j-1;}}
+	limit maxpulse;
+	if (abs(limit.ymax)>=abs(limit.ymin)) m1=limit.ymax;
+	else m1=limit.ymin;
+	loop (i,1,q1) {
+	for (ii=3;ii<end+1;ii++) {
+	if (%N_Time$(i)[ii]-%N_Time$(i)[ii-1]==1 && (%N_Ep$(i)[ii]-%N_Ep$(i)[ii-1])==$(m1)) {
+	k1=$(i); 						//episode number with maximal voltage step
+	k2=$(ii);						//index of maximal step
+	break;}}}
+	k3=int((%N_Time$(k1)[k2-1]-%N_Time$(k1)[k2-2])/5+%N_Time$(k1)[k2-2]);	//offset calculation
+	k4=int(%N_Time$(k1)[k2-1]-(%N_Time$(k1)[k2-1]-%N_Time$(k1)[k2-2])/5);
+	k5=int((%N_Time$(k1)[k2+1]-%N_Time$(k1)[k2])/2+%N_Time$(k1)[k2]);
+	sum(%L_ep$(k1) -b $(k3) -e $(k4));	
+	for (ii=k4;ii<k5;ii++) {
+	if ((%L_ep$(k1)[ii+1]-%L_ep$(k1)[ii])<$(-10*sum.sd) || (%L_ep$(k1)[ii+1]-%L_ep$(k1)[ii])>$(10*sum.sd)) 
+	break;}
+	offset=%N_Time$(k1)[k2]-ii-1;
+	del -v k*;
+	del -v m*;
+	//getnumber -s (Offset value?) offset (Enter offset);	//confirm offset estimate is Ok
+	loop (ii,1,q1) {
+	%N_Time$(ii)-=offset;									//offset correction
+	%N_Time$(ii)[1]=1;
+	get %L_time -e end;
+	%N_Time$(ii)[2*q2+2]=$(end);}
+	}	
+	run.section(,Plot2);
+	
+[Plot1]
+//gap-free data plotting
+	//win -b "Graph($(num1))" pClampApp2;
+	
+	win -b "Graph($(num1))" "%@AAdvanced pCLAMP Analyzer\APCA";
+	
+	%K=%H;									//Plot - %K
+	%H!page.active=2; layer -d;
+	%H!page.active=4; layer -d;
+	%H!page.active=1;
+	y1=-6; y2=-3; layer.y.inc=1;
+	layer 70 8 15 4;
+	label -r text;
+	label -yl;
+	label -sa -yl ([CCh] \r (log M));
+	yl.fsize=16;
+//Plot currents	
+	%H!page.active=2;
+	layer -w %L 200;      					
+	layer -at;
+	sum(%L_Ch0);
+	if (sum.min<-15 || sum.max>15) {label -yl (Current (pA))};
+	if (sum.min>-15 || sum.max<15) {label -yl (Current (nA))};
+	label -xb (Time (ms));
+	layer 70 32 15 15;
+	
+	%H!page.active=3;
+	if (sum.min<=-15 || sum.max>15) {label -yl (Current (pA))};
+	if (sum.min>-15 || sum.max<15) {label -yl (Current (nA))};
+	label -xb ([Carbachol] (log M));
+	layer 36 30 32 60;
+	@MP=1;
+	mark -u;
+	
+[Plot2]										
+//Data plotting in case of single file selected
+	//win -b "Graph($(num1))" pClampApp2;
+	
+	win -b "Graph($(num1))" "%@AAdvanced pCLAMP Analyzer\APCA";
+	
+	%K=%H;									//Plot - %K
+	%H!page.active=1;           			//set layer 1 active
+	layer -w %N 200;   						//plot voltage steps
+	layer -at;
+	layer.y.inc=int((y2-y1)/50)*10;
+	layer.y.firstTick=y1;
+	
+	%H!page.active=2;      					//set layer 2 active
+	layer -w %L 200;      					//plot currents
+	@MP=1;
+	mark -u;
+	layer -at;
+
+
+[WindowCurrent]
+//Setting up workbooks
+	if (act1==0/0) {						//to perform only once
+	work - b IV;				
+	work -a 5;
+	wks.col$(1).label$=Voltage;
+	wks.col$(2).label$=IV raw data;
+	wks.col$(3).label$=Inactivation raw data;
+	wks.col$(4).label$=Leak current;
+	wks.col$(5).label$=IV leak corrected;
+	wks.col$(6).label$=Steady state inactivation;
+	wks.col$(7).label$=Steady state activation;
+	wks.labels();
+	
+	work - b Fit;							//Fitted curves
+	work -a 3;
+	wks.col$(2).label$=Inactivation;
+	wks.col$(3).label$=Activation;
+	wks.col$(4).label$=Conductance;
+	wks.col$(5).label$=Current;
+	wks.labels();
+	win -a %K;}
+
+/*Get activation data	
+Choose Activation Epoch (default 2 - Epoch B)*/
+	Act=2;
+	getnumber -s (A - 1, B - 2, C - 3, D - 4 ...) Act (Activation Epoch?);
+	for (i=1;i<q1+1;i++) {     					//Membrane potentials in IV_A
+	IV_A[i]=EpochV[Act] + EpochVinc[Act]*(i-1);}
+	Act1=%N_Time1[Act*2-1];						//index begin
+	Act2=%N_Time1[Act*2];						//index end
+	for (i=1;i<q1+1;i++) {
+	limit %L_ep$(i) -b Act1 -e Act2;
+	if (%N_Ep$(i)[Act*2-1]<%N_Ep$(i)[Act*2-2]) IV_B[i]=limit.ymax;
+	else
+	IV_B[i]=limit.ymin;
+	}
+	
+//Get inactivation data 
+//Choose Inactivation Epoch (default 4 - Epoch C)
+	InAct=4;
+	getnumber -s (A - 1, B - 2, C - 3, D - 4 ...) InAct (Inactivation Epoch?);
+	Act3=%N_Time1[InAct*2-1];
+	Act4=%N_Time1[InAct*2];
+	for (i=1;i<q1+1;i++) {
+	limit %L_ep$(i) -b Act3 -e Act4;
+	if (%N_Ep$(i)[Inact*2-1]<%N_Ep$(i)[Inact*2-2]) 
+	{IV_C[i]=limit.ymax;}
+	else {IV_C[i]=limit.ymin;}}
+	
+//Perform linear leak correction
+	LR -b IV_B;        						//Perform linear fit with automatic search for linearity
+	IV_D=lr.a+lr.b*IV_A;      				//calculate leak currents
+	InRes=1/lr.b;               			//Input resistance
+	IV_E=IV_B-IV_D;    						//I-V leak correction
+	
+//Calculate & fit inactivation data
+	work -b Fit;
+	for (i=1;i<102;i++) {
+	Fit_A[i]=IV_A[1]+(i-1)*(IV_A[q1]-IV_A[1])/100;}
+	range fitx=1, fity=2;
+	work -b IV;
+	IV_F=IV_C-lr.a-lr.b*EpochV[inact]; 		//leak correction of inactivation data
+	sum(IV_F -b 1 -e 3);
+	IV_F=IV_F/$(sum.mean);  				//normalise by mean value of 3 first points
+	nlbegin (1,6) Boltzmann tt;
+	tt.A1=1;tt.f_A1=1;              		//fix A1=1
+	tt.lbon_A2=1;							//enable lower bounds for A2
+	tt.lb_A2=0;								//A2>=0
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+	
+/*Calculate & fit activation data
+Estimate Erev*/
+	LR -e IV_B;        						//Perform linear fit with automatic search for linearity
+	Erev=-lr.a/lr.b;               			//Erev
+	getnumber -s (Erev ?) Erev (Enter Erev);//provides manual input of Erev
+	IV_G=IV_E/(IV_A-Erev);  				//calculate conductance
+	work -b Fit;
+	range fitx=1, fity=3;
+	work -b IV;
+	nlbegin (1,7) Boltzmann nlt;
+	nlt.f_A1=1;
+	nlt.A1=0;                       		//fix A1=0
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+	Gmax=nlt.A2;				  			//Gmax
+	Fit_C/=Gmax;			        		//Normalise data by Gmax
+	IV_G/=Gmax;	
+
+//Calculate "window" current
+	Fit_D=Gmax*Fit_B*Fit_C;        			//window conductance
+	Fit_E=(Fit_A-Erev)*Fit_D;      			//window current
+
+//Save Results
+	work -b Results;
+	Results_A[1]$=Gmax;
+	Results_B[1]=$(Gmax,.2);
+	Results_A[2]$=Erev;
+	Results_B[2]=$(Erev,.2);
+	Results_A[3]$=Act V1/2;
+	Results_B[3]=$(nlt.x0,.2);
+	Results_A[4]$=Act k;
+	Results_B[4]=$(nlt.dx,.2);
+	Results_A[5]$=Inact V1/2;
+	Results_B[5]=$(tt.x0,.2);
+	Results_A[6]$=Inact k;
+	Results_B[6]=$(tt.dx,.2);
+	Results_A[7]$=InR (GOhm);
+	Results_B[7]=$(Inres,.2);
+
+//Plot data
+	win -a %K;
+	%H!page.active = 3;            			//plot I-Vs
+	layer -i202 IV_B IV_C IV_E;    			//plot columns B & C into active layer;
+	set IV_B -k 1; set IV_B -c 1;
+	set IV_C -k 2; set IV_C -c 4;
+	set IV_E -k 3; set IV_E -c 2;
+	layer -i200 IV_D;        				//plot leak
+	set IV_D -c 3;
+	layer -at;                  			//resize layer scale to include all data
+	layer.x.inc=int((x2-x1)/50)*10; 		//major X-axis tick increment 
+	x1-=10;
+	y1=(int(y1/100)-1)*100;
+	y2=(int(y2/100)+1)*100;
+	layer.y.inc=int((y2-y1)/500)*100; 		//major Y-axis tick increment
+	draw -d 1 -l -v 0;
+	draw -d 1 -l -h 0;         				//draw X=0 Y=0 lines
+	label -a (x1+(x2-x1)/10) y2 -b 1 -s -sa -n InputR (Rin = $($(InRes),.2) GOhm);
+	inputr.fsize=12;
+	
+	%H!page.active = 4;         			//plot activation and inactivation curves
+	layer -i201 IV_F IV_G; 
+	set IV_F -k 2; set IV_F -c 4;
+	set IV_G -k 3; set IV_G -c 2;
+	layer -i200 Fit_B Fit_C;
+	set Fit_B -c 4; set Fit_B -lv 1; set Fit_B -lvc 4;
+	set Fit_C -c 2; set Fit_C -lv 1; set Fit_C -lvc 2;	
+	label -sa -p 70 40 -b 1 -s -n Param1 (Activation: \n V\-(1/2) = $($(nlt.x0,.1)) mV \n k = $($(nlt.dx,.1)) mV);
+	Param1.fsize=12;
+	label -sa -p 10 40 -b 1 -s -n Param2 (Inactivation: \n V\-(1/2) = $($(tt.x0,.1)) mV \n k = $($(tt.dx,.1)) mV);
+	Param2.fsize=12;
+	layer -at;
+	layer.x.inc=int((x2-x1)/50)*10; 		//major X-axis tick increment 
+	x1-=10;
+	y1=-0.05; y2=1;
+	label -r yl;
+	label -a (x1+(x2-x1)/10) 1.2 h\g(\(a181));
+	label -a (x2-(x2-x1)/10) 1.2 m\g(\(a181));
+	
+	%H!page.active = 5;       				//plot window current
+	layer -c;								//%Z - plotted datasets
+	layer -e %Z;							//remove all datasets
+	layer -i200 Fit_E;
+	set Fit_E -w 1000;
+	layer -at;
+	layer.x.inc=int((x2-x1)/50)*10; 		//major X-axis tick increment 
+	x1-=10;
+	y2=0;
+	y1=layer.y.inc*(int(y1/layer.y.inc)-1);
+	draw -d 1 -l -v 0;
+	draw -d 1 -l -h 0;
+	label -yl ("Window" current (pA));
+	yl.fsize=16;
+	
+
+[MultiRamp]	
+//This script works out I-V curves from ramp protocols, converts them into G-V relationships and fits these by Boltzmann function
+//Find ramp epoch and create I-V curves
+	for (jj=1;jj<q2+1;jj++) {
+	if (EpochType[jj]==2) break;}
+	epoch=jj;
+	//getnumber -s (Ramp Epoch?) Epoch (Enter Ramp Epoch: A-1, B-2 etc); 	//Manual choice of ramp epoch
+	win -a %L;
+	work -d IV;
+	mark -d IV_time -b %N_time1[epoch*2+1] -e wks.maxrows;
+	mark -d IV_time -b 1 -e %N_time1[epoch*2-2];
+	for (i=1;i<EpochD[epoch]+1;i+1) {
+	IV_time[i]=EpochV[epoch-1]+(i-1)* ((EpochV[epoch]-EpochV[epoch-1])/(EpochD[epoch]-1));
+	}
+	wks.col1.name$=Voltage;
+	wks.col1.label$=mV;
+	%O=%H;						//%O - ramp IV data
+	set %O -er wks.maxrows;		//remove rows with no data - this sets number of rows to the last containing data
+	win -a %K;     				//return to graph
+	%H!page.active=3;      		//set layer 3 active
+	layer -w %O 200;      		//plot I-V curves
+	layer -at;
+	layer.x.inc=int((x2-x1)/50)*10; 	//major X-axis tick increment 
+	y1=(int(y1/100)-1)*100;
+	y2=(int(y2/100)+1)*100;
+	layer.y.inc=int((y2-y1)/500)*100; 	//major Y-axis tick increment
+	draw -d 1 -l -v 0;
+	draw -d 1 -l -h 0;
+	
+	%H!page.active=4;
+	label -yl (Conductance (nS));
+	yl.fsize=16;
+	%H!page.active=5;
+	label -yl V\-(1/2) (mV);
+	yl.fsize=16;
+	label -xb (Temperature (\+(o)C));
+	xb.fsize=16;
+	
+//This script calculates conductance curves from ramp data
+//Determine Erev
+	work -b Erev;
+	win -a %O;
+	sort -wd %O col(1);   					//Sort worksheet in descending order
+	get col(1) -e end;
+	m=wks.ncols;
+	m1=int(1/(IV_voltage[1]-IV_voltage[2]));
+	loop (jj,1,m-1) {
+	for (i=1;i<end;i+1) {
+	if (%O_ep$(jj)[i]<0) break;
+	m2=i;}
+	LR %O_ep$(jj) -b $(m2-m1) -e $(m2+m1);	//Linear fit around +/-1 mV of Erev 
+	Erev_B[jj]=-lr.a/lr.b;
+	Erev_A[jj]=m2;}
+//Create conductance curves
+	win -a %O;
+	work -d Conductance;
+	%P=%H;									//%P - Conductance curves
+	for (i=2;i<m+1;i+1) {
+	col($(i))/=col(1)-Erev_B[i-1];
+	s=Erev_A[i-1];
+	ave -l col($(i)) -b $(s-5*m1) -e $(s+5*m1);
+	ave -n 3 col($(i)) -b $(s-k) -e $(s+k);  //smoothes data points within +/-5 mV around Erev
+	nn=wks.nrows;							// nn number of rows
+	}
+	numcol=wks.ncols;
+	win -a %K;     							//return to graph
+	%H!page.active=4;      					//set layer 4 active
+	layer -w %P 200;      					//plot G-V curves
+	layer -at;
+	layer.x.inc=int((x2-x1)/50)*10; 		//major X-axis tick increment 
+	y1=0;
+	y2=(int(y2/5)+1)*5;
+	layer.y.inc=int((y2-y1)/50)*10; 		//major Y-axis tick increment
+	
+//Fit Boltzmann function	
+	getYesNo (Perform Boltzmann fit?) MyChoice (Fit session);	//Choice to fit Boltzmann function
+	if (MyChoice==1) {
+	GetN (Current number of data points per trace) nn (Skip every N points (0 to fit all data points)) f (Enter Number of Data Points to Skip When Fitting);
+	win -a %P;
+	sort -w %P col(1);						//Sort worksheet in ascending order
+	%C=col($(1));
+	get %C -e end;
+	if (f>0) {
+	k=int(end/f);
+	if (end>k*f) mark -d %C -b $(k*f+1) -e end; 
+	loop (num,1,k-1)
+	{
+	mark -d %C -b $(num+1) -e $(num+f-1);
+	};
+	mark -d %C -b $(num+1) -e $(num+f-2);
+	set %H -er wks.maxrows;					//remove rows with no data - this sets number of rows to the last containing data
+	}
+	win -a %K;
+	%H!page.active=4;
+	%Z=1;
+	for (i=2;i<q1+1;i++) {
+	%Z=%Z,$(i);}												//define datasets to be fitted
+	nlbegin iy:=(%Z) func:=Boltzmann nltree:=fit mode:=global;  //Boltzmann fit with shared parameters
+	getYesNo (Fit with shared slope?) Shared;					//User input to choose shared slope
+	if (Shared==1) {
+	fit.s4=1; 													//set slope = shared
+	};
+	//nlpara;													//open the Fitting Parameter dialog													
+	fit.s1=1;													//set A1 = shared
+	fit.lbon_A1=1;												//enable lower bounds for A1
+	fit.lb_A1=0;												//A1>=0
+	fit.s1=0;													//set A1 = independent
+	nlfit;														//fit data													
+	
+	///---Alex 2/3/2017 NOT_OUTPUT_FIT_REPORT
+	/*nlgui gg 1;
+	gg.quantities.Parameters.value=0;
+	gg.quantities.Parameters.error=0;
+	gg.ResAnalysis.Regular=0;
+	gg.quantities.ANOVAtable=0;
+	gg.graph1.doplot=0;
+	gg.residuals.graph2=0;
+	gg.output.plotsettings.pasteresulttable.use=0;
+	nlgui gg 0;
+	nlend 1;*/
+	
+	range -wx rwx=1;
+	double dx1, dx2;
+	dx1=min(rwx);
+	dx2=max(rwx);
+	newsheet book:=Conductance cols:=q1+1;
+	range rx=[Conductance]2!col(1);
+	rx[L]$ = [Conductance]1!col(1)[G]$;
+	rx=data(dx1,dx2,(dx2-dx1)/1000);
+	
+	for( i=2; i<=q1+1; i++ )
+	{
+		range ry=[Conductance]2!wcol(i);
+		ry[L]$ = "Fit Curve of " + [Conductance]1!wcol(i)[G]$;
+		ry=fit(rx,i-1);
+	}
+	
+	layer -w [Conductance]2! 200;
+	layer -at;
+	
+	nlend;
+	}
+	%H!page.active=4;
+	layer -gu;
+	layer -gu;
+	layer -c;
+	loop (num, 1, count/2) {
+	layer4.plot = num;
+	set %C -c 20;}
+	loop (num,1+count/2,count) {
+	layer4.plot = num;
+	set %C -c 1;}
+//Save results	
+	work - b FitParam;										
+	work -a 3;
+	wks.col$(1).label$=Temperature;
+	wks.col$(2).label$=A1;
+	wks.col$(3).label$=A2;
+	wks.col$(4).label$=V0.5;
+	wks.col$(5).label$=Slope;
+	wks.labels();
+	FitParam_B[1]=$(fit.A1);
+	FitParam_C[1]=$(fit.A2);
+	FitParam_D[1]=$(fit.x0);
+	FitParam_E[1]=$(fit.dx);
+	for (i=1;i<q1;i++) {
+	FitParam_B[i+1]=$(fit.A1_$(i+1));
+	FitParam_C[i+1]=$(fit.A2_$(i+1));
+	FitParam_D[i+1]=$(fit.x0_$(i+1));
+	FitParam_E[i+1]=$(fit.dx_$(i+1));
+	}
+	tin=20;tincr=1;
+	GetN (Initial temperature) tin (Temperature increment) tincr (Define temperature range);
+	for (i=1;i<q1+1;i++) {
+	FitParam_A[i]=tin+(i-1)*tincr;}
+//Fit V1/2 values with logistic function
+	work -b LogisticFit;
+	for (i=1;i<102;i++) {
+	LogisticFit_A[i]=10+(i-1)*0.3;}
+	range fitx=1, fity=2;
+	work -b FitParam;
+	nlbegin (1,4) Logistic tt;
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+//Plot data
+	win -a %K;
+	%H!page.active=5; 
+	layer -w [FitParam]Sheet1! 4 0 4 0 201;
+	set %C -k 2;
+	layer -w LogisticFit 200;
+	layer -at;
+	layer.x.inc=int((x2-x1)/50)*10; //major X-axis tick increment 
+	y1=(int(y1/10)-1)*10;
+	y2=(int(y2/10)+1)*10;
+	layer.y.inc=int((y2-y1)/100)*20; //major Y-axis tick increment
+	layer.y.to=(int(y2/layer.y.inc)+1)*layer.y.inc;
+	label -sa -p 10 40 -b 1 -s -n t1/2 "t\-(1/2) = $($(tt.x0,.1)) \+(O)C";
+	t1/2.fsize=16;
+
+	
+[Recovery1]
+//Find Epoch with duration increment
+	loop (jj,1,q2) {
+	if (EpochDinc[jj]>0) break;}
+	Rec=jj;
+//Recovery from inactivation measurements
+	work - b Recovery;
+	work -b TimeCourse;
+	for (i=1;i<q1+1;i++) {
+	Recovery_A[i]=(EpochD[Rec]+EpochDinc[Rec]*(i-1))*Clock/1000;
+	limit %L_ep$(i) -b (%N_Time$(i)[Rec*2+1]) -e (%N_Time$(i)[Rec*2+2]);
+	Recovery_B[i]=limit.ymax;
+	TimeCourse_A[i]=%L_time[limit.imax];
+	TimeCourse_B[i]=limit.ymax;
+	get Recovery_A -e end;
+	}
+//Data fitting
+	work -b Fit;
+	for (i=1;i<102;i++) {
+	Fit_A[i]=Recovery_A[1]+(i-1)*(Recovery_A[end]-Recovery_A[1])/100;}
+	range fitx=1, fity=2;
+	win -a Recovery;
+	nlbegin (1,2) ExpDec1 tt;
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+
+//Plot data
+	win -a %K;
+	if (page.nlayers>3) {
+	%H!page.active=5;layer -d;%H!page.active=4;layer -d;}
+	
+	%H!page.active=1;
+	layer 45 20 8 8;
+	layer -c;
+	layer -e %Z;
+	layer -i;
+	layer -w %N;
+	set %N_ep1 -w 500;
+	layer -r;
+	layer1.y.inc=$(y2-y1);
+	layer1.y.MinorTicks=0;
+	
+	%H!page.active=2;
+	layer 45 50 8 35;
+	layer -c;
+	layer -e %Z;
+	layer -i;
+	layer -w %L;
+	set %L_ep1 -w 500;
+	layer -r;
+	layer -i201 TimeCourse_B;
+	set TimeCourse_B -k 6;
+	set TimeCourse_B -c 4;
+	
+	%H!page.active=3;
+	layer 35 70 62 8;
+	label -xb (Time (ms));
+	layer -i201 Recovery_B;
+	set Recovery_B -k 2;
+	set Recovery_B -z 9;
+	layer -i200 Fit_B;
+	set Fit_B -c 2;
+	layer -at;
+	y1=0;
+	layer.y.inc=10^nint(log(y2))/5;
+	layer.y.to=(int(y2/layer.y.inc)+1)*layer.y.inc;
+	x1=0;
+	label -sa -p 25 0 -b 1 -s -n Tau (Time constant $($(tt.t1,.1)) ms);
+	Tau.fsize=16;
+	
+	
+[Recovery2]
+//Setting up Workbooks
+	newbook name:=Recovery option:=lsname;
+	wks.multiX=1;
+	repeat wks.ncols (del(col(1)));
+	loop (ii,1,num2) {
+	wks.addCol(Time$(ii));
+	wks.col$(4*ii-3).type=4;
+	wks.addCol(Ctrl$(ii));
+	wks.addCol(Inact$(ii));
+	wks.addCol(Norm$(ii));
+	}
+	loop (var, 1, wks.ncols)	 
+	{wks.col$(var).digitMode = 1;	//Set decimal places
+	wks.col$(var).digits = 2;		//Two decimal places
+	};
+
+	newbook name:=TimeCourse option:=lsname;
+	wks.multiX=1;
+	repeat wks.ncols (del(col(1)));
+	loop (ii,1,num2) {
+	wks.addCol(Time$(ii));
+	wks.col$(2*ii-1).type=4;
+	wks.addCol(Current$(ii));
+	}
+	loop (var, 1, wks.ncols)	 
+	{wks.col$(var).digitMode = 1;	//Set decimal places
+	wks.col$(var).digits = 2;		//Two decimal places
+	};
+	
+	newbook name:=Fit option:=lsname;
+	wks.multiX=1;
+	repeat wks.ncols (del(col(1)));
+	loop (ii,1,num2) {
+	wks.addCol(Time$(ii));
+	wks.col$(2*ii-1).type=4;
+	wks.addCol(Fit$(ii));
+	}
+	loop (var, 1, wks.ncols)	 
+	{wks.col$(var).digitMode = 1;	//Set decimal places
+	wks.col$(var).digits = 2;		//Two decimal places
+	};
+	
+	newbook name:=Tau option:=lsname;
+	run.section(,Mask);	
+
+[Mask]
+//Duration of capacitive transient to exclude from data analysis
+	if (exist(Cm)==0){getnumber -s (Capacitive current in ms?) Cm (Exclude capacitive current)};
+	Cm1=Cm*1000/Clock;							//number of samples of capacitive artefact
+	loop (jj,1,q2) {
+	for (i=1;i<q1+1;i++) {
+	if (%N_Ep$(i)[2*jj+1] != %N_Ep$(i)[2*jj]) { 
+	range rr = [%L]Sheet1!col($(i+1));
+	r1=%N_Time$(i)[2*jj+1];
+	r2=%N_Time$(i)[2*jj+1]+$(Cm1);
+	mark -w1 rr[$(r1):$(r2)];
+	}
+	}
+	}
+
+//Setting up Plots
+	win -a %K;
+	if (page.nlayers>4) {
+	%H!page.active=3;layer -d;}
+	
+	%H!page.active=1;
+	layer 85 8 10 8;
+	layer -c;
+	layer -e %Z;
+	layer -i;
+	layer -w %N;
+	set %N_ep1 -w 500;
+	layer -r;
+	layer1.y.inc=$(y2-y1);
+	layer1.y.MinorTicks=0;
+	
+	%H!page.active=2;
+	layer 85 30 10 21;
+	layer -c;
+	layer -e %Z;
+	layer -i;
+	layer -w %L;
+	set %L_ep1 -w 500;
+	layer -r;
+	layer -i201 TimeCourse_Current$(num1);
+	set TimeCourse_Current$(num1) -k 6;
+	set TimeCourse_Current$(num1) -c 4;
+	layer -at;
+	
+	%H!page.active=3;
+	layer 32 32 10 58;
+	label -xb (Interpulse interval (ms));
+	label -yl (Relative current);
+	
+	%H!page.active=4;
+	layer 32 32 65 58;
+	label -xb (Membrane potential (mV));
+	label -yl (Time constant (ms));
+	
+//Recovery from inactivation measurements
+	Recovery_Time$(num1)={%A};							//user list for interpulse duration (# of samples)
+	Recovery_Time$(num1)*=clock/1000;					//user list for interpulse duration (ms)
+	get Recovery_Time$(num1) -e end;
+	
+	work -b TimeCourse;
+	for (i=1;i<q1+1;i++) {
+	limit %L_ep$(i) -b (%N_Time$(i)[3]+Cm1) -e (%N_Time$(i)[4]);
+	Recovery_Ctrl$(num1)[i]=limit.ymin;
+	limit %L_ep$(i) -b (%N_Time$(i)[7]+Cm1) -e (%N_Time$(i)[8]);
+	Recovery_Inact$(num1)[i]=limit.ymin;
+	Recovery_Norm$(num1)=Recovery_Inact$(num1)/Recovery_Ctrl$(num1);
+	Recovery_Norm$(num1)[C]$=$(EpochV[3]) mV;
+	TimeCourse_Time$(num1)[i]=%L_time[limit.imin];
+	TimeCourse_Current$(num1)[i]=limit.ymin;
+	TimeCourse_Current$(num1)[C]$=$(EpochV[3]) mV;
+	}
+	
+//Data fitting
+	work -b Fit;
+	for (i=1;i<1002;i++) {
+	Fit_Time$(num1)[i]=Recovery_Time$(num1)[1]+(i-1)*(Recovery_Time$(num1)[end]-Recovery_Time$(num1)[1])/1000;}
+	range fitx=$(2*num1-1), fity=$(2*num1);
+	win -a Recovery;
+	nlbegin ($(4*num1-3),$(4*num1)) ExpDec1 tt;
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+	Tau_A[num1]=EpochV[3];  //Iterpulse potential
+	Tau_B[num1]=$(tt.t1);
+
+//Plot data
+	win -a %K;
+	%H!page.active=2;
+	@MP=1;
+	mark -u;
+	
+	layer -at;%H!page.active=3;
+	layer -i201 Recovery_Norm$(num1);
+	set Recovery_Norm$(num1) -k 2;
+	set Recovery_Norm$(num1) -z 8;
+	layer -i200 Fit_Fit$(num1);
+	set Fit_Fit$(num1) -c 2;
+	layer -at;
+	y1=0; y2=1;
+	x1=0;
+	layer 32 32 30 58;
+	
+	label -sa -q 4 -b 1 -s -n Tau (\g(t) = $($(tt.t1,.1)) ms);
+
+	Tau.fsize=16;
+	%H!page.active=4;
+	layer -h 1;
+	sec -p 5;						//5 sec pause
+	
+	if (num2==1) break;
+	else
+	if (num1<num2) {
+	run.section(,Import);
+	run.section(,Mask);
+	}
+	else
+	run.section(,Summary);
+	
+[Summary]
+//Fitting summary data
+	limit Tau_A;
+	work -b FitVdep;
+	for (i=1;i<102;i++) {
+	FitVdep_A[i]=limit.ymin+(i-1)*(limit.ymax-limit.ymin)/100;}
+	range fitx=1, fity=2;
+	win -a Tau;
+	nlbegin (1,2) ExpGro1 tt;
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+//Plot summary data
+	win -a %K;
+	win -d;
+	win -z;
+	win -r %H Summary;
+	page.longname$=Summary;
+	
+	%H!page.active=2;
+	%C=TimeCourse_Current$(num1);
+	set %C -k 18;
+	nlbegin iy:=(%C) func:=ExpDec1;
+	nlfit;
+	
+	///---Alex 11/3/2016 NO_REPORT_OUTPUT
+	%A = xof(%C);
+	double dx1, dx2;
+	dx1=min(%A);
+	dx2=max(%A);
+	newsheet book:=TimeCourse active:=0;
+	range rx=[TimeCourse]2!col(1);
+	range ry=[TimeCourse]2!col(2);
+	rx=data( dx1,dx2,(dx2-dx1)/(1000-1) );
+	ry=fit(rx);
+	ry[L]$ = "ExpDec1 Fit of Current$(num1)";
+	nlend 0;
+	layer -w [TimeCourse]2! 2 0 2 0 200;
+	set TimeCourse_B@2 -d 1;
+	set TimeCourse_B@2 -w 500;
+	
+	/*nlend 1;
+	layer -w [TimeCourse]FitNLCurve1! 2 0 2 0 200;
+	set TimeCourse_B@3 -d 1;
+	set TimeCourse_B@3 -w 500;*/
+	
+	%H!page.active=3;
+	layer 32 32 10 58;
+	label -r Tau;
+	layer -c;						//%Z - plotted datasets
+	layer -e %Z;					//remove all datasets
+	layer -i;						//delete all data plot style holders 
+	loop (jj,1,num2) {
+	layer -i201 Recovery_Norm$(jj);
+	set Recovery_Norm$(jj) -k 2;
+	set Recovery_Norm$(jj) -c $(jj);
+	};
+	legend;
+	legend.fsize=14;
+	loop (jj,1,num2) {
+	layer -i200 Fit_Fit$(jj);
+	set Fit_Fit$(jj) -c $(jj);
+	};
+	layer -at;
+	y1=0; y2=1;
+	axis -ps X S 1;
+	x1=0.8; x2=1000;
+	
+	%H!page.active=4;
+	layer -h 0;
+	layer -i201 Tau_B;
+	set Tau_B -k 2;
+	set Tau_B -z 8;
+	layer -i200 FitVdep_B;
+	layer -at;
+	y1=0;
+	layer.y.inc=20;
+	layer.y.to=(int(y2/layer.y.inc)+1)*layer.y.inc;
+	layer.x.inc=20;
+	x1-=5;
+	label -q 2 -b 1 -s -n Vdep (\i(e)-fold change per $($(tt.t1),.1) mV);
+	Vdep.fsize=16;
+
+[DoseResponse]
+//Ananlysis of currents recorded using voltage step protocol (e.g. TTX acting on sodium channels)
+	%H!page.active = 3;
+	layer 32 12 65 8;
+	label -yl [TTX] (log M);
+	layer.showX=0;
+	label -r xb;
+	
+	%H!page.active = 4;
+	layer 32 22 65 25;
+	label -xb Time (min);
+	layer4.link=3;
+	layer4.X.link=1;
+	
+	work - b DR;
+	for (i=1;i<q1+1;i++) {
+	DR_A[i]=trheader.File1.HeaderInfo.fEpisodeStartToStart*(i-1)/60;}	//Time in minutes
+	loop (jj,1,q1) {
+	limit %L_ep$(jj) -b (%N_Time$(jj)[3]) -e (%N_Time$(jj)[4]);
+	DR_B[jj]=limit.ymin;
+	}
+	num1=q1;
+	
+	work - b Applications;
+	for (i=1;i<7;i++) {
+	Applications_A[i]=DR_A[i*10];		//Time of TTX application
+	Applications_B[i]=-10+(i-2);		//TTX concentration
+	}
+	Applications_B[1]=-10;
+	
+	work -b Measurements;
+	loop (jj,1,5) {
+	%Z=DR_B -b (jj*10+5) -e (jj*10+10);	//Calculate mean of 5 data points in control and at each TTX concentration
+	sum(%Z);
+	Measurements_B[jj]=sum.mean;
+	Measurements_A[jj]=-10+(jj-1);
+	}
+	%Z=DR_B -b 1 -e 10;					//Normalise data by control amplitude
+	sum(%Z);
+	Measurements_B/=sum.mean;
+
+//Fit data
+	work -b FitCurve;
+	for (i=1;i<102;i++) {
+	FitCurve_A[i]=Measurements_A[1]-1+(i-1)*(Measurements_A[5]+2-Measurements_A[1])/100;}
+	range fitx=1, fity=2;
+	win -a Measurements;
+	nlbegin (1,2) DoseResp tt;
+	tt.lbon_A1=1;							//enable lower bounds for A1
+	tt.lb_A1=0;								//A1>=0
+	tt.f_A2=1;
+	tt.A2=1;								//fix A2=1
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+
+//Plots	
+	win -a %K; 
+	%H!page.active=1;
+	layer.y.inc=$(y2-y1);
+	layer.y.MinorTicks=0;
+	
+	%H!page.active=2;
+	layer 45 60 8 27;
+	
+	%H!page.active=3;
+	layer -i200 Applications_B;
+	set Applications_B -c 2; set Applications_B -l 12;
+	layer -at;
+	
+	%H!page.active=4;
+	layer -i202 DR_B;
+	set DR_B -k 2; set DR_B -kf 2; set DR_B -c 4; set DR_B -z 6;
+	layer -at;
+	x1-=0.5;
+	x2=int(x2)+1;
+	y2=0;
+	layer.x.inc=int((x2-x1)/500)*100; 					//major X-axis tick increment
+	layer.y.inc=int((y2-y1)/500)*100; 					//major Y-axis tick increment
+	y1=layer.y.inc*(int(y1/layer.y.inc)-1);
+	
+	%H!page.active=5;             						//plot data & fit curve
+	layer -i201 Measurements_B;    	
+	set Measurements_B -k 2; set Measurements_B -c 1; set Measurements_B -z 9;
+	layer -i200 FitCurve_B;
+	set FitCurve_B -c 4;
+	layer -at;
+	label -sa -p 15 40 -b 1 -s -n Params (IC\-(50): $((10^$(tt.Logx0)*10^9),.1) nM \n Hill slope: $($(tt.p,.2)));
+	Params.fsize=16;
+	label -xb [TTX] (log M);
+	label -yl (Relative current);
+	y1=0; y2=1;
+	layer.x.inc=1;
+	num2=trheader.File1.HeaderInfo.lStopwatchTime;		//stopwatch time
+
+//Choice to add whash-out data
+	getYesNo (Include wash-out data?) MyChoice (Select pClamp file);
+	if (MyChoice==1) {
+	%M=%K;
+	run.section(,Import);
+	win -c;
+	num3=trheader.File1.HeaderInfo.lStopwatchTime;		//num3 - Experiment stopwatch time
+	work - b DR;
+	for (i=1;i<q1+1;i++) {
+	DR_A[i+num1]=trheader.File1.HeaderInfo.fEpisodeStartToStart*(i-1)/60+$(num3-num2)/60;}	//Time in minutes
+	loop (jj,1,q1) {
+	limit %L_ep$(jj) -b (%N_Time$(jj)[3]) -e (%N_Time$(jj)[4]);
+	DR_B[jj+num1]=limit.ymin;}
+//Plots
+	win -a %M;
+	%H!page.active=4;
+	layer -at;
+	x1-=0.5;
+	x2=int(x2)+1;
+	y2=0;
+	layer.x.inc=int((x2-x1)/500)*100; 				//major X-axis tick increment
+	layer.y.inc=int((y2-y1)/500)*100; 				//major Y-axis tick increment
+	y1=layer.y.inc*(int(y1/layer.y.inc)-1);
+	
+	layer -n;
+	layer -i;										//delete all data plot style holders 
+	loop (jj,1,q1) {								//plot wash-out currents
+	layer -i200 %L_Ep$(jj);
+	set %L_Ep$(jj) -w 500;
+	}     		
+	layer.factor=1;
+	layer 45 35 8 60;
+	layer.showX=0;
+	layer.showY=0;	
+	layer.link=2;
+	layer.X.link=1;
+	layer.Y.link=1;
+	label -p 40 0 Wash-out;
+	draw -d 1 -c 1 -w 1 -l -h 0;
+	
+	%H!page.active=2;
+	layer 45 35 8 25;
+	label -p 45 0 TTX;
+	layer -at;
+	x1=0;
+	}
+
+[AgonistDR]
+	getYesNo (Perform automated analysis?) MyChoice (Auto/Manual);	//Choice to do this analysis in Auto or Manual mode
+	if (MyChoice==1) {run.section(,Auto);}
+	if (MyChoice==0) {run.section(,Manual);}
+
+[Auto]
+//Find solution change artefacts	
+	win -a %L;				
+	if (exist(k1)==4) {mark -sa %C;}				// Remove any previous masks
+	k1=wks.maxrows;			
+	work -a 1;
+	wks.col3.name$=Diff;
+	%L_Diff=diff(%L_Ch0);
+	sum(%L_Diff);
+	work -b Peaks;
+	clearworksheet %H;
+	width=20; 										//the number of points on either side of the test point when determining a peak.
+	hight=20;										//determines the difference of height between the peak center data point with index i and the point at (i-width) or (i-width)
+	getnumber (width) width (hight #SD) hight (Enter search parameters);
+	Peaks_A=peaks(%L_Diff,$(width),$(hight)*sum.sd);		//height in the number of SD values
+	k2=wks.maxrows;
+	win -a %L;
+	del(col(3));
+//Mask solution change artefacts	
+	loop (jj,1,k2) {
+	range rr = [%L]Sheet1!col(2);
+	r1=Peaks_A[jj]-5;
+	r2=Peaks_A[jj]+5;
+	mark -w1 rr[r1:r2];
+	}	
+
+	win -a Peaks;
+	if (wks.nCols==2) work -a 1;
+	Peaks_C=Peaks_A;
+	loop (ii,1,k2) {
+	Peaks_A[ii]=%L_Time[Peaks_A[ii]];
+	}
+//Combine peaks which are <5s apart
+	loop (jj,2,k2) {						
+	if (Peaks_A[jj]-Peaks_A[jj-1]<5000) Peaks_B[jj]=0;
+	}
+	for (ii=k2;ii>0;ii--) {
+	if (Peaks_B[ii]==0) {range aa = 1[ii]:3[ii];
+	del aa;
+	}
+	}
+
+//Input of agonist concentrations (molar)
+	Peaks_B[1]=1E-6;
+	Peaks_B[2]=1E-6;
+	Peaks_B[3]=3E-6;
+	Peaks_B[4]=1E-5;
+	Peaks_B[5]=3E-5;
+	Peaks_B[6]=1E-4;
+	Peaks_B[7]=3E-4;
+	Peaks_B=log(peaks_B);
+	
+	win -a %K;
+	%H!page.active=1;
+	layer -i200 Peaks_B;
+	set Peaks_B -c 2; set Peaks_B -l 12;
+	layer -at;
+	%H!page.active=2;
+	layer.link=1;
+	layer.X.link=1;
+	layer -at;
+
+//Agonist curve - measurements
+	Clock=trheader.File1.HeaderInfo.fADCSequenceInterval/1000;		//sampling rate (in ms)
+	work - b DoseResp;
+	DoseResp_A=Peaks_B;
+	loop (jj,1,7) {
+	sum(%L_Ch0 -b (Peaks_C[jj]-10000/clock) -e Peaks_C[jj]);		//calculate mean current during 10 s before the next solution application
+	DoseResp_B[jj]=$(sum.mean);
+	}
+	
+	work -b Response;
+	if (wks.nCols==2) {
+	work -a 6;}
+	loop(jj,1,7) {
+	Response_A[2*jj-1]=0;
+	Response_A[2*jj]=Peaks_A[jj];}
+	Response_A[2]=%L_Time[k1];	
+	loop(jj,1,7) {
+	col($(jj+1))[2*jj-1]=DoseResp_B[jj];
+	col($(jj+1))[2*jj]=DoseResp_B[jj];}
+
+//Fit data
+	DoseResp_B-=DoseResp_B[1];						//Subtract baseline
+	DoseResp_B/=-1;
+	mark -d DoseResp_B -b 1 -e 1;
+	
+	work -b FitCurve;
+	for (i=1;i<102;i++) {
+	FitCurve_A[i]=DoseResp_A[1]-1+(i-1)*(int(DoseResp_A[6])+1-DoseResp_A[1])/100;}
+	range fitx=1, fity=2;
+	win -a DoseResp;
+	nlbegin (1,2) DoseResp tt;
+	tt.f_A1=1;
+	tt.A1=0;						//fix A1=0
+	nlfit;
+	fity=fit(fitx);
+	nlend;	
+	
+//Plot data & fit curve
+	win -a %K;
+	%H!page.active=1;
+	y1=-6; y2=-3;
+	layer.y.inc=1;
+	
+	%H!page.active=2;
+	layer -w Response 200;
+	set Response_B -c 4;
+	set Response_B -d 1;
+	layer -at;
+	x1=0;
+	y2=0;
+	layer.y.inc=nint((y1-y2)/500)*100;
+	
+	%H!page.active=3;
+	layer -i201 DoseResp_B;
+	set DoseResp_B -k 2;
+	set DoseResp_B -c 1;
+	set DoseResp_B -z 9;
+	layer -i200 FitCurve_B;
+	draw -n MaxValue -L -h $(tt.A2);
+	Maxvalue.color=4;
+	maxvalue.linewidth=1;
+	maxvalue.linetype=2;
+	layer -at;
+	label -sa -p 10 10 -b 1 -s -n Param1 (EC\-(50): $((10^$(tt.Logx0)*10^6),.1) \g(m)M \n Hill slope: $($(tt.p,.2)));
+	Param1.fsize=16;
+	s1=100*DoseResp_B[6]/$(tt.A2);
+	label -sa -p 80 10 -b 1 -s -n Param2 (Imax is $(s1,.1) % of plateau level);
+	Param2.fsize=16;
+	
+	layer.Y.majorTicks=5;
+	layer.y.inc=nint((y1-y2)/500)*100;
+	y1-=0.05*(y2-y1);
+
+[Manual]
+//Enter agonist name and its concentrations used (up to 10 values), 0 if not used
+	string Agonist$ = "Carbachol";
+	CCh1 = 1; CCh2 = 3; CCh3 = 10; CCh4 = 30; CCh5 = 100; CCh6 = 300; CCh7=0; CCh8=0; CCh9=0; CCh10=0;
+	getn (Agonist) Agonist$
+	(1st) CCh1
+	(2nd) CCh2
+	(3rd) CCh3
+	(4th) CCh4
+	(5th) CCh5
+	(6th) CCh6
+	(7th) CCh7
+	(8th) CCh8
+	(9th) CCh9
+	(10th) CCh10
+	(Agonist concentrations used (in mkM));
+
+	Loop (jj,1,10) {
+	if (CCh$(jj)==0) break;
+	}
+	k1=jj;							//k1: baseline + number of concentrations used
+
+	win -a %K;
+	if (page.nLayers>2) {			//This graph should have 2 layers only
+	%H!page.active=1; 
+	layer -d;
+	}
+	%H!page.active=1; 
+	layer 50 60 8 20;
+	layer -at;
+	layer.y.inc=nint((y1-y2)/500)*100;
+	loop (jj,1,k1) {
+	draw -n Line$(jj) -L -h [y2-(y2-y1)*(jj-1)/k1];	//draw k1 horisontal lines for measuring current amplitudes
+	Line$(jj).color=$(jj);
+	Line$(jj).linewidth=1;
+	Line$(jj).linetype=2;
+	Line$(jj).arrowEndLength=15;
+	Line$(jj).arrowEndWidth=15;
+	Line$(jj).arrowEndShape=12;
+	Line$(jj).vmove=1;
+	Line$(jj).keepinside=1;
+	Line$(jj).realtime=1;
+	}
+
+	work - b DoseResp;
+	k2=k1-1;
+	loop (jj,1,k2) {
+	DoseResp_A[jj+1]=$(CCh$(jj));
+	}
+	DoseResp_A*=1E-6;						//molar concemtration				
+	DoseResp_A=log(DoseResp_A);
+	
+	win -a %K;
+	%H!page.active=2; 
+	layer 30 60 67 20;
+	%H!page.active=1;
+
+	///---Alex 11/3/2016 USE_DONE_BUTTON
+//Pause script for up to 1 min to allow time for cursor positioning
+	/*break -be Position cursors and click on the End button when done;  
+	break -r 1 60;  			//showing time in s for 1 min 
+	for (ii=1;ii<61;ii++) {
+    break -p ii;   				//display progress
+    sec -p 1;   				//pause for 1 s
+	};*/
+	
+	run.LoadOC("%@AAdvanced pCLAMP Analyzer\DoneButton.c", 16);
+	
+	string strLT, strText;
+
+	strLT$ = "run.section(%@AAdvanced pCLAMP Analyzer\APCA.ogs, EventAfterDoneButton, %(Agonist$));";
+	strText$ = "Position horizontal cursors in the left graph.%(LF)Click on the Done button when done.";
+	
+	TestDoneButtonDialog( strLT$, "Move Cursors to Position", strText$ );
+	
+[EventAfterDoneButton]	
+//Save measurements
+	loop (jj,1,k1) {
+	DoseResp_B[jj]=line$(jj).y;
+	}
+	DoseResp_B-=DoseResp_B[1];			//subtract baseline value
+	mark -d DoseResp_B -b 1 -e 1;		//deelte the baseline value
+	DoseResp_B=abs(DoseResp_B);			//use absolute values for fitting
+//Sort agonist concentrations and current amplitudes in ascending order, so that the exact order of lines becomes irrelevamt	
+win -a DoseResp; 
+col(1)=sort(col(1));
+col(2)=sort(col(2));
+
+//Fit data
+	work -b FitCurve;
+	for (i=1;i<102;i++) {
+	FitCurve_A[i]=DoseResp_A[1]-1+(i-1)*(int(DoseResp_A[6])+1-DoseResp_A[1])/100;}
+	range fitx=1, fity=2;
+	win -a DoseResp;
+	nlbegin (1,2) DoseResp tt;
+	tt.f_A1=1;
+	tt.A1=0;						//fix A1=0 (by definition, I=0 at [agonist]=0)
+	nlfit;
+	fity=fit(fitx);
+	nlend;
+
+//Plot data & fit curve
+	win -a %K;
+	%H!page.active=2;
+	layer -i201 DoseResp_B;
+	set DoseResp_B -k 2;
+	set DoseResp_B -c 1;
+	set DoseResp_B -z 9;
+	layer -i200 FitCurve_B;
+	layer -at;
+	draw -n MaxValue -L -h $(tt.A2);
+	Maxvalue.color=4;
+	maxvalue.linewidth=1;
+	maxvalue.linetype=2;
+	k3=100*DoseResp_B[k2]/$(tt.A2);
+	label -s -xt (Imax is $($(k3,.1)) % of plateau level);
+	xt.fsize=16;
+	label -sa -p 10 10 -b 1 -s -n Params (EC\-(50): $((10^$(tt.Logx0)*10^6),.1) \g(m)M \n Hill slope: $($(tt.p,.2)));
+	Params.fsize=16;
+	
+	//label -s -xb ([%(Agonist$)] (log M));
+	label -s -xb ([%1] (log M));
+	
+	y1=0;
+	y2=$(tt.A2);
+	layer.y.inc=nint((y1-y2)/500)*100;
+	
+[Open_help]
+	run.LoadOC( "%@AAdvanced pCLAMP Analyzer\DoneButton.c", 16 );
+	open_doc_help( "QuickStart.pdf", "%@AAdvanced pCLAMP Analyzer" );

@@ -1,0 +1,15 @@
+[DoneButtonDialog]
+	run.loadoc(%YOriginC\DoneButton.c, 16);
+	
+	string strLT, strText="Done button works successfully.";
+
+	strLT$ = "run.section(DoneButtonDialog,PrintTest);";
+	strText$ = "Test it.%(LF)You can do other things.";
+	
+	TestDoneButtonDialog( strLT$, "Choose Data Range", strText$ );
+
+	
+[PrintTest]
+	
+	for(int ii=1; ii<=1000; ii++)
+		{type -a $(ii);}
