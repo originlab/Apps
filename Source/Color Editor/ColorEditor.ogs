@@ -22,7 +22,11 @@
 		return;
 	// Read Palette file
 	btnUndo.show=0;
-	string strpath$;
+	//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
+	//string strpath$;
+	string strpath$ = page.v1$;
+	if(strpath.IsEmpty())
+	//---end SAVE_PATH_TO_PAGE_V123 
 	strpath$ = system.path.program$ + "Palettes";
 	dlgFile group:="*.PAL" title:="Select Palette" init:=strPath$;
 	int nColors = ol_read_palette(fname$);
@@ -31,6 +35,7 @@
 		strpath$ = fname.GetFileName()$;
 		page.longname$=strpath$;
 		type -v -a Read $(nColors) colors from file %(fname$);
+		page.v1$=fname.GetFilePath()$;//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
 	}
 	else
 	{
@@ -40,10 +45,14 @@
 [btnReadList]
 	if(run.section(,OCLoad)!= 0)
 		return;
-	page.v1=0;//reset it first
+	page.v1=0;page.v2=0;//reset it first
 	// Read Color List (theme) file
 	btnUndo.show=0;
-	string strpath$;
+	//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
+	//string strpath$;
+	string strpath$ = page.v2$;
+	if(strpath.IsEmpty())
+	//---end SAVE_PATH_TO_PAGE_V123
 	strpath$ = system.path.program$ + "Themes\Color";
 	dlgFile group:="*.OTH" title:="Select Color List" init:=strPath$;
 	int nThemeID, nLocation;
@@ -57,6 +66,7 @@
 		page.v1=nThemeID;
 		page.v2=nLocation;
 		//------
+		page.v2$=fname.GetFilePath()$;//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
 	}
 	else
 	{
