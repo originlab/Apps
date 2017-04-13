@@ -15,6 +15,11 @@
 ////////////////////////////////////////////////////////////////////////////////////
 #include <..\Originlab\okThemeID.h>//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
 
+//---CPY 3/13/2017 APPS-312-P2 LOAD_CUSTOM_COLOR_LIST
+//unfortunately these are ifdef out in okThemeID.h for OC
+#define OTID_GLOBAL_CUSTOM_COLOR_LIST_COLOR 0x064a
+#define OTID_GLOBAL_CUSTOM_COLOR_LIST 0x0648
+//---
 /////////////////////////////////////////////////////////////////////////////////////
 // Function: ol_write_palette_binary
 // This function writes the color map to a binary palette file - the format for the
@@ -246,6 +251,7 @@ int ol_read_palette_ascii(string strFileName, vector<BYTE> &vRed, vector<BYTE> &
 	return nColors;
 }
 //------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
+//see okIsThemeIDColorList
 static bool _is_color_list_ID(int nID)
 {
 	if(OTID_GLOBAL_COLOR_LIST == nID)
@@ -257,6 +263,9 @@ static bool _is_color_list_ID(int nID)
 	//OTID_GLOBAL_BORDERCOLOR_LIST
 	//OTID_GLOBAL_FILLCOLOR_LIST
 	if(nID >= OTID_GLOBAL_LINECOLOR_LIST && nID <= OTID_GLOBAL_FILLCOLOR_LIST)
+		return true;
+	
+	if(OTID_GLOBAL_CUSTOM_COLOR_LIST_COLOR == nID)//-------CPY 3/13/2017 APPS-312-P2 LOAD_CUSTOM_COLOR_LIST
 		return true;
 	
 	return false;
@@ -273,38 +282,52 @@ static bool _is_color_list_ID(int nID)
 int ol_read_colorlist(string strFileName, int& nThemeID, int& nLocation)
 {
 	Tree tr;
-    tr.Load(strFileName);
-    TreeNode tr1 = tr.e;
-    if (!tr1) {
-        return 0;
-    }
-    TreeNode tr2 = tr1.e;
-    if (!tr2) {
-        return 0;
-    }
-    TreeNode tr3 = tr2.e;
-    if (!tr3) {
-        return 0;
-    }
-    //------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
-    nThemeID = tr3.ID;
-    if(!_is_color_list_ID(nThemeID))
-    	return -1;
-    string strFilePath = GetFilePath(strFileName);
+	tr.Load(strFileName);
+	TreeNode tr1 = tr.e;
+	if (!tr1) {
+		return 0;
+	}
+	TreeNode tr2 = tr1.e;
+	if (!tr2) {
+		return 0;
+	}
+	TreeNode tr3 = tr2.e;
+	if (!tr3) {
+		return 0;
+	}
+	
+	//-------CPY 3/13/2017 APPS-312-P2 LOAD_CUSTOM_COLOR_LIST
+	int nType;
+	if(!tr3.GetAttribute(STR_TYPE_ATTRIB, nType))
+	{
+		tr3 = tr3.e;
+		if(!tr3.GetAttribute(STR_TYPE_ATTRIB, nType))
+			return -2;
+	}
+	if(!(nType & FPB_STYLE_COLOR_LIST))
+		return -3;
+	//-------end LOAD_CUSTOM_COLOR_LIST
+	
+	
+	//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
+	nThemeID = tr3.ID;
+	if(!_is_color_list_ID(nThemeID))
+		return -1;
+	string strFilePath = GetFilePath(strFileName);
 	if(strFilePath.Match("*\\Themes\\IncrementList\\"))
 		nLocation = 1;
 	else
 		nLocation = 0;
-    //------
-    DWORD rgb;
-    vector<DWORD> vd;
-    vd = tr3.nVals;
-    vector<BYTE> vbRed, vbGreen, vbBlue;
-    int nColors = vd.GetSize();
+	//------
+	DWORD rgb;
+	vector<DWORD> vd;
+	vd = tr3.nVals;
+	vector<BYTE> vbRed, vbGreen, vbBlue;
+	int nColors = vd.GetSize();
 	for (int i = 0; i < nColors; i++)
 	{
 		rgb = okutil_convert_ocolor_to_RGB(vd[i]);
-        //printf("%d => %d\n", vd[i], rgb);
+		//printf("%d => %d\n", vd[i], rgb);
 		vbRed.Add(GetRValue(rgb));
 		vbGreen.Add(GetGValue(rgb));
 		vbBlue.Add(GetBValue(rgb));
@@ -348,18 +371,24 @@ int ol_write_colorlist(string strFileName, int nColors, int nThemeID)
 	tr.SetAttribute(THEME_PROPERTY2_BITS_NAME, FPB_NONE);
 	tr.SetAttribute(THEME_COUNT_NAME, 1);
 
-	TreeNode tn1 = tr.AddNode("e", 1);
+	TreeNode tn1 = tr.AddNode("e", OTID_FIRST);
 	if( !tn1.IsValid() )
 		return 3;
-	TreeNode tn2 = tn1.AddNode("e", 256);
+	TreeNode tn2 = tn1.AddNode("e", OTID_GLOBAL);
 	if( !tn2.IsValid() )
 		return 3;
 	//------CPY 4/6/2017 APPS-312-P1 SAVE_THEME_ID_TO_PAGE_V1
 	//TreeNode tn3 = tn2.AddNode("e", 521);
 	if(!_is_color_list_ID(nThemeID))
 		nThemeID = OTID_GLOBAL_COLOR_LIST;
+	
+	//---CPY 3/13/2017 APPS-312-P2 LOAD_CUSTOM_COLOR_LIST
+	if(OTID_GLOBAL_CUSTOM_COLOR_LIST_COLOR == nThemeID)
+		tn2 = tn2.AddNode("e", OTID_GLOBAL_CUSTOM_COLOR_LIST);
+	//---end LOAD_CUSTOM_COLOR_LIST
+	
 	TreeNode tn3 = tn2.AddNode("e", nThemeID);
-	//------
+	//------end SAVE_THEME_ID_TO_PAGE_V1
 	if( !tn3.IsValid() )
 		return 3;
 

@@ -55,6 +55,7 @@
 	//---end SAVE_PATH_TO_PAGE_V123
 	strpath$ = system.path.program$ + "Themes\Color";
 	dlgFile group:="*.OTH" title:="Select Color List" init:=strPath$;
+	page.v2$=fname.GetFilePath()$;//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
 	int nThemeID, nLocation;
 	int nColors = ol_read_colorlist(fname$,nThemeID,nLocation);
 	if( nColors > 0)
@@ -66,7 +67,6 @@
 		page.v1=nThemeID;
 		page.v2=nLocation;
 		//------
-		page.v2$=fname.GetFilePath()$;//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
 	}
 	else
 	{
@@ -213,9 +213,15 @@
 		return;
 
 btnUndo.show = 0;
-string path$;
-path$ = %y;
+//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
+//string path$;
+//path$ = %y;
+	string path$ = page.v3$;
+	if(strpath.IsEmpty())
+		path$ = %y;
+//---end SAVE_PATH_TO_PAGE_V123
 dlgFile group:="*.gpl" title:="Load GIMP Palette" init:=Path$;
+page.v3$=fname.GetFilePath()$;//---CPY 4/12/2017 APPS-312-S1 SAVE_PATH_TO_PAGE_V123
 int nColors = ol_load_gimp(fname$);
 if( nColors > 0)
 {
