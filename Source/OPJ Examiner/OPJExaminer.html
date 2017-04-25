@@ -28,6 +28,8 @@
                     <li role="presentation" class="active"><a href="#tab-1" data-toggle="tab">Dependents Broswer</a></li>
 
                     <li role="presentation"><a href="#tab-2" data-toggle="tab">Independent Books</a></li>
+                    
+                    <li role="presentation"><a href="#tab-3" data-toggle="tab">Dependent Books</a></li>
                 </ul>
                 
                 <div class="tab-content" id="tabContent">
@@ -61,18 +63,10 @@
                                 </table>
                             </div>
                         </div>
-                        <!--There are a left panel and a right panel in Tab1--> 
-                        <div class="row">
-                            <div class="col-sm-8 col-md-6">
-                                <div id="msgdiv" style="display: none" mce_style="display: none"></div>
-                                <!--The left panel will show a table-->
-                                <div class="panel-table1" id="table1" style="display: none" mce_style="display: none"></div>
-                            </div>
-                            <div class="col-sm-4 col-md-6">
-                                <!--The right panel will show a list of graph-->
-                                <div class="panel-graphpreview" id="graphpreview" style="display: none" mce_style="display: none"></div>
-                            </div>
-                        </div>
+                        <!--There are only one panel in Tab1--> 
+                        <div id="ActiveBookMsg" style="display: none" mce_style="display: none"></div>
+                        <!--The Main panel will show a table-->
+                        <div class="panel-table1" id="table1" style="display: none" mce_style="display: none"></div>
                     </div>
                     <!--tab2-Independent Book-->
                     <div id="tab-2" class="tab-pane fade">
@@ -88,6 +82,17 @@
                         <!--This main panel will show a table-->
                         <div class="panel-table2" id="table2" style="display: none" mce_style="display: none"></div>
                     </div>
+                    <!--tab3-Dependent Book-->
+                    <div id="tab-3" class="tab-pane fade">
+                        <div class="panel panel-default">
+                            <div class="panel-body">                 
+                                <button id="tab3Find" type="button" class="btn btn-default">Find</button>
+                            </div>
+                        </div>
+                        <!--There is only one panel in Tab3-->
+                        <!--This main panel will show a table-->
+                        <div class="panel-table2" id="table3" style="display: none" mce_style="display: none"></div>
+                    </div>
                 </div>
             </div>        
         </div>
@@ -100,7 +105,7 @@
         
         <!-- Placed at the end of the document so the pages load faster -->
         <script src="dist/jquery.min.js"></script>
-        <script src="dist/js/bootstrap.min.js"></script> 
+        <script src="dist/js/bootstrap.js"></script> 
         <script src="scripts/script.js"></script> 
         <script type="text/javascript" src="dist/jquery.tablesorter.min.js"></script>
         

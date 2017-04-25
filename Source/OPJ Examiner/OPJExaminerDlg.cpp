@@ -16,13 +16,14 @@ struct stOneObjectDependents
 	string Name;
 };
 
-//Declare a struct for an independent book
-struct stOneIndependent
+//Declare a struct for a book
+struct stOneBook
 {
 	string SN;
 	string LN;
 	string Path;
 	string Size;
+	int Num;
 };
 
 struct stOneGraph
@@ -182,7 +183,7 @@ public:
 			if(strOneGraph==NULL)
 				return -1;
 			else
-				jsscript.appendImageInDiv(strOneGraph);
+				jsscript.appendImageInContent(strOneGraph);
 		}
 		return nGraphSize;
 	}
@@ -207,10 +208,10 @@ public:
 	// This method will be called from Javascript.
 	// This function is used to get the info of independent 
 	// book and fill the table.
-	int GetIndependentInfo()
+	int GetIndependentBookInfo()
 	{	
 		vector<string> vsPageName;
-		int nNum = GetIndependentsNum(vsPageName);
+		int nNum = GetBooksNum(true, vsPageName);
 		if(nNum < 1)
 			return nNum;
 		Object jsscript = m_dhtml.GetScript();
@@ -224,8 +225,8 @@ public:
 			Page pg(vsPageName[ii]);
 			if(pg.IsValid())
 			{
-				string strOneIndependent = GetIndependent(pg);
-				jsscript.showTab2OneRow(strOneIndependent, nRowIndex);
+				string strOneIndependentBook = GetOneBookInfo(true, pg);
+				jsscript.showTab2OneRow(strOneIndependentBook, nRowIndex);
 				nRowIndex++;
 			}
 		}
@@ -254,6 +255,34 @@ public:
 		else
 			pg.Destroy(); 
 			return true;
+	}
+	
+	// This method will be called from Javascript.
+	// This function is used to get the info of dependent 
+	// book and fill the table.
+	int GetDependentBookInfo()
+	{	
+		vector<string> vsPageName;
+		int nNum = GetBooksNum(false, vsPageName);
+		if(nNum < 1)
+			return nNum;
+		Object jsscript = m_dhtml.GetScript();
+		if(!jsscript)
+			return -1;
+		jsscript.newTab3Table(nNum);
+		
+		int nRowIndex =1;
+		for(int ii=0; ii < vsPageName.GetSize(); ii++)
+		{
+			Page pg(vsPageName[ii]);
+			if(pg.IsValid())
+			{
+				string strOneDependentBook =GetOneBookInfo(false, pg);
+				jsscript.showTab3OneRow(strOneDependentBook, nRowIndex);
+				nRowIndex++;
+			}
+		}
+		return true;
 	}
 	
 	
@@ -300,7 +329,7 @@ private:
 		stOneResult.SN = obj.GetName();
 		stOneResult.LN = obj.GetLongName();
 		stOneResult.Num = vs.GetSize();
-		
+	
 		string strDependents;
 		int nSize = vs.GetSize();
 		if(nSize < 4)
@@ -400,12 +429,12 @@ private:
 	}
 	
 	
-	// This function is used to count the independent book in project.
-	int GetIndependentsNum(vector<string>& vsPageName)
+	// This function is used to count the independent or dependent book in project.
+	int GetBooksNum(bool bIndependentMode, vector<string>& vsPageName)
 	{
 		FindDependentHelper _dep;
 		vector<string> vsGraphName;
-		int nIndependentsNum = 0;
+		int nBooksNum = 0;
 		string strPageNameString;
 		foreach(PageBase pg in Project.Pages)
 		{
@@ -415,22 +444,33 @@ private:
 			if(nPageType == EXIST_WKS || nPageType == EXIST_MATRIX)
 			{
 				int nn = pg.FindDepdendentGraphs(vsGraphName);
-				if(nn == 0)
+				if(bIndependentMode)
 				{
-					strPageNameString += pg.GetName() + " ";
-					nIndependentsNum++;
+					if(nn == 0)
+					{
+						strPageNameString += pg.GetName() + " ";
+						nBooksNum++;
+					}
+				}
+				else
+				{
+					if(nn > 0)
+					{
+						strPageNameString += pg.GetName() + " ";
+						nBooksNum++;
+					}
 				}
 			}
 		}
 		int nRet = strPageNameString.GetTokens(vsPageName, ' ');
-		return nIndependentsNum;
+		return nBooksNum;
 	}
 	
 	//This function is used to get 
-	//one independent book info
-	string GetIndependent(Page pg)
+	//one independent or dependent book info
+	string GetOneBookInfo(bool bIndependentMode, Page pg)
 	{
-		stOneIndependent stOneResult;
+		stOneBook stOneResult;
 		stOneResult.SN = pg.GetName();
 		stOneResult.LN = pg.GetLongName();
 		PropertyInfo pgInfo;
@@ -439,6 +479,15 @@ private:
 		stOneResult.Path =pgInfo.szLocation;
 		string size = pgInfo.szSize;
 		stOneResult.Size = size.GetToken(0, '(');
+		if(!bIndependentMode)
+		{
+			FindDependentHelper _dep;
+			vector<string> vs;
+			int nn;
+			nn = pg.FindDepdendentGraphs(vs);
+			stOneResult.Num = vs.GetSize();
+		}
+		
 		string strOneIndependent;
 		JSON.ToString(stOneResult, strOneIndependent);
 		return strOneIndependent;
@@ -454,9 +503,10 @@ BEGIN_DISPATCH_MAP(OPJExaminerDlg, HTMLDlg)
 	DISP_FUNCTION(OPJExaminerDlg, GetAllDependentsInfo, VTS_I4, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, ShowGraphPreview, VTS_STR, VTS_STR VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, ShowGraphNameString, VTS_STR, VTS_STR VTS_STR)
-	DISP_FUNCTION(OPJExaminerDlg, GetIndependentInfo, VTS_BOOL, VTS_VOID)
+	DISP_FUNCTION(OPJExaminerDlg, GetIndependentBookInfo, VTS_I4, VTS_VOID)
 	DISP_FUNCTION(OPJExaminerDlg, ActivePage, VTS_BOOL, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, DeletePage, VTS_BOOL, VTS_STR)
+	DISP_FUNCTION(OPJExaminerDlg, GetDependentBookInfo, VTS_I4, VTS_VOID)
 END_DISPATCH_MAP
 
 //---- LabTalk Access
