@@ -12,7 +12,6 @@ struct stOneObjectDependents
 {
 	string SN;
 	string LN;
-	int Num;
 	string Name;
 };
 
@@ -51,7 +50,8 @@ public:
 		int nRet = HTMLDlg::Create(hParent);
 		ModifyStyle(0, WS_MAXIMIZEBOX);
 		//ModifyStyle(WS_THICKFRAME, 0); // Remove sizing border.
-
+		m_dhtml.UpdateWindow();
+		
 		return nRet;
 	}
 protected:
@@ -156,36 +156,21 @@ public:
 	
 	// This method will be called from Javascript.
 	// It is used to show the dependent graph preview.	
-	int ShowGraphPreview(string strMode, string strObjName)
+	string ShowGraphPreview(string strGraphName)
 	{
-		vector<string> vsGraphName;
-		stOneGraph stOneResult;
-		
-		if(!DependentsVector(strMode, strObjName, vsGraphName))
-			return -1;
-		
 		Object jsscript = m_dhtml.GetScript();
 		if(!jsscript)
-			return -1;
+			return NULL;
 		
 		char TempPath[MAXFULLPATH];
 		DWORD nRet = GetTempPath(MAXFULLPATH, TempPath);
 		if(!nRet)
-			return -1;
+			return NULL;
 		
-		int nGraphSize = vsGraphName.GetSize();
-		if(!nGraphSize)
-			return 0;
-				
-		for(int ii = 0; ii < nGraphSize; ii++ )
-		{	
-			string strOneGraph = GetDependentGraphPreview(TempPath, vsGraphName[ii]);
-			if(strOneGraph==NULL)
-				return -1;
-			else
-				jsscript.appendImageInContent(strOneGraph);
-		}
-		return nGraphSize;
+		string strGraphPath = GetDependentGraphPreview(TempPath, strGraphName);
+		if(strGraphPath==NULL)
+			return NULL;
+		return strGraphPath;
 	}
 	
 	// This method will be called from Javascript.
@@ -328,20 +313,12 @@ private:
 		nn = obj.FindDepdendentGraphs(vs);
 		stOneResult.SN = obj.GetName();
 		stOneResult.LN = obj.GetLongName();
-		stOneResult.Num = vs.GetSize();
 	
 		string strDependents;
 		int nSize = vs.GetSize();
-		if(nSize < 4)
+		for(int ii =0; ii < nSize; ii++)
 		{
-			for(int ii =0; ii < nSize; ii++)
-			{
-				strDependents += vs[ii] + " "; 
-			}
-		}
-		else
-		{
-			strDependents += vs[0] + "..." + vs[nSize-1]
+			strDependents += "<a data-toggle=\"popover\">" + vs[ii] + "</a>" + " "; 
 		}
 		stOneResult.Name = strDependents;
 		
@@ -417,7 +394,6 @@ private:
 			return NULL;
 		
 		//Set the save path for preview image
-		//string strImagePath = Project.GetPath() + vsGraphName[ii] + ".png";
 		string strGraphPath = strFolder + strGraphName + ".png";
 		bool bRet = gp.SavePreviewImage(strGraphPath);
 		if(!bRet)
@@ -501,7 +477,7 @@ private:
 
 BEGIN_DISPATCH_MAP(OPJExaminerDlg, HTMLDlg)
 	DISP_FUNCTION(OPJExaminerDlg, GetAllDependentsInfo, VTS_I4, VTS_STR)
-	DISP_FUNCTION(OPJExaminerDlg, ShowGraphPreview, VTS_STR, VTS_STR VTS_STR)
+	DISP_FUNCTION(OPJExaminerDlg, ShowGraphPreview, VTS_STR, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, ShowGraphNameString, VTS_STR, VTS_STR VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, GetIndependentBookInfo, VTS_I4, VTS_VOID)
 	DISP_FUNCTION(OPJExaminerDlg, ActivePage, VTS_BOOL, VTS_STR)

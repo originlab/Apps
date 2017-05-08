@@ -32,42 +32,51 @@ window.onload = function(){
         else
         {
             document.getElementById("msg").className = "text-success";
-            document.getElementById("msg").innerHTML =  "Click any the graph name to show its graph preview.";                            
-            //When click the graph name (link) in Table1 
-            $("#tb1 a").click(function(){
-                var $anchor = $(this);             
-                //Get the name of object
-                var objName = $anchor.parents("tr").find("td:nth-child(2)").html();
-                //Global variable
-                graphPaths = "<div class=\"panel-graphpreview\" id=\"graphpreview\">";
-                //This is the function to call OC to append the paths of graph preview                             
-                var showImageStatus = window.external.ExtCall("ShowGraphPreview", checkmode, objName); 
+            document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";    
+                                            
+            //When hover on the graph name (link) in Table1 
+            $("#tb1 a").each(function(){
+                var $anchor = $(this);   
+                var graphName = $(this).text();        
+                var graphPreview = constructGraphPreview(graphName); 
+                var enterTimer, leaveTimer;
                 
-                //Append a button at the end of the popover                              
-                graphPaths += "</div></br><div style=\"text-align:center\"><button type=\"button\" class=\"btn btn-xs btn-primary tab1ClosePreview\">" +  
-                                                "Close Preview</button></div>"
-                
-                //Initialize popovers
-                //$anchor.popover("destroy").popover({
+                //Initialize popover
                 $anchor.popover({    
                     html: "true",
-                    placement : "left",
+                    placement : "top",
+                    trigger: "manual",
                     title: "Graph Preview",
-                    content: graphPaths,
-                    viewport: "#tab-1",
-                })
-                $anchor.popover("show");
-                $("[data-toggle='popover']").not($anchor).popover("destroy");
-                //When click the Close Preview button         
-                $anchor.on("shown.bs.popover", function() {
-                     $('.tab1ClosePreview').click(function() {        
-                        $anchor.popover("destroy");
-                        document.getElementById("msg").className = "text-success";
-                        document.getElementById("msg").innerHTML =  "Click the graph name to show its graph preview."; 
-                    });
+                    content: graphPreview,
+                    viewport: "#tab-1"
+                }).on("mouseover", function (){
+                        clearTimeout(enterTimer);
+                        clearTimeout(leaveTimer);
+                        //Close all other popovers
+                        $("[data-toggle='popover']").not($anchor).popover("hide");
+                        //Start new timeout to show popover
+                        enterTimer = setTimeout(function(){
+                            $anchor.popover("show");
+                            document.getElementById("msg").className = "text-success";
+                            document.getElementById("msg").innerHTML =  "Double click on the preview to activate the graph window.";    
+                        },500);     
+                        $(".popover").on("mouseout", function (){
+                            $anchor.popover("hide");
+                            document.getElementById("msg").className = "text-success";
+                            document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";   
+                        });
+                }).on("mouseleave", function (){
+                        clearTimeout(enterTimer);
+                        clearTimeout(leaveTimer); 
+                        leaveTimer = setTimeout(function(){
+                            if (!$(".popover:hover").length)
+                            {
+                                $anchor.popover("hide");
+                                document.getElementById("msg").className = "text-success";
+                                document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";   
+                            }
+                        },100);
                 });
-                
-                enableToActiveImage(showImageStatus, checkmode, objName);        
             }); 
         }
     });
@@ -101,7 +110,7 @@ window.onload = function(){
         else
         {
             document.getElementById("msg").className = "text-success";
-            document.getElementById("msg").innerHTML = "Double click on any row to active the book!"; 
+            document.getElementById("msg").innerHTML = "Double click on any row to activate the book!"; 
             //4. Enable to sort table by clicking table header
             $(function(){
             $("#tb2").tablesorter();
@@ -124,7 +133,7 @@ window.onload = function(){
             }); 
             
             //6. Disable or enable Delete button
-            $(":checkbox").each(function() {
+            $(":checkbox").each(function(){
                 $(this).click(function(){
                     var checklength = $("#tb2 tbody input:checked").length;
                     if(checklength >0)
@@ -147,7 +156,7 @@ window.onload = function(){
                 var createClickHandler = 
                     function(row) 
                     {
-                        //6. Double click any row in table to active its corresponding workbook
+                        //6. Double click any row in table to activate its corresponding workbook
                         return function() {  
                                             var cell = row.getElementsByTagName("td")[1];
                                             var bookName = cell.innerHTML;
@@ -206,7 +215,7 @@ window.onload = function(){
         else
         {
             document.getElementById("msg").className = "text-success";
-            document.getElementById("msg").innerHTML = "Double click on any row to active the book!"; 
+            document.getElementById("msg").innerHTML = "Double click on any row to activate the book!"; 
             //4. Enable to sort table by clicking table header
             $(function(){
             $("#tb3").tablesorter();
@@ -221,7 +230,7 @@ window.onload = function(){
                 var createClickHandler = 
                     function(row) 
                     {
-                        //6. Double click any row in table to active its corresponding workbook
+                        //6. Double click any row in table to activate its corresponding workbook
                         return function() {  
                                             var cell = row.getElementsByTagName("td")[1];
                                             var bookName = cell.innerHTML;
@@ -256,7 +265,6 @@ function newTab1Table(RowsNum, checkmode)
             "<th>#</th>" +   
             "<th>Short Name</th>" + 
             "<th>Long Name</th>" +  
-            "<th>Number of Graphs</th>" + 
             "<th>Graph Short Names</th>" + 
             "</tr>" +
             "</thead>" +
@@ -267,7 +275,6 @@ function newTab1Table(RowsNum, checkmode)
         data += "<td>" + i + "</td>"; // Column for number
         data += "<td></td>"; // Column for short name
         data += "<td></td>"; // Column for long name
-        data += "<td></td>"; // Column for number of dependents
         data += "<td></td>"; // Column for name of dependents
         data += "</tr>";   
     } 
@@ -284,8 +291,7 @@ function showTab1OneRow(stringOutput, RowIndex)
     var table = document.getElementById("tb1");
     table.rows[RowIndex].cells[1].innerHTML = JsonOutput.SN;
     table.rows[RowIndex].cells[2].innerHTML = JsonOutput.LN;
-    table.rows[RowIndex].cells[3].innerHTML = JsonOutput.Num;
-    table.rows[RowIndex].cells[4].innerHTML = "<a data-toggle=\"popover\">" + JsonOutput.Name + "</a>";
+    table.rows[RowIndex].cells[3].innerHTML = JsonOutput.Name;
 } 
 
 //This is the function used to append to
@@ -301,38 +307,43 @@ function showCurrentAcitve(currentname)
     document.getElementById("ActiveBookMsg").innerHTML = data;     
 }
 
-function appendImageInContent(stringOutput)
+//This is the function used to get the path of preview
+//and then construct a graph preview div
+function constructGraphPreview(graphName)
 {
-    var JsonOutput = JSON.parse(stringOutput);//Parse string to Json
-    imagePath = "<img name=\"" +
-                JsonOutput.Name +
-                "\" src=\"" + 
-                JsonOutput.Path + 
-                "\" class=\"img-responsive center-block\"/>" +  
-                "</br></br>"; 
-    graphPaths += imagePath;
-}
-
-// This is the function used to show the graph preview
-function enableToActiveImage(showImageStatus, checkmode, objName)
-{
-    if (showImageStatus == -1)
+    var graphPreview = "<div class=\"panel-graphpreview graphpreview\">";
+    //This is the function to call OC to append the paths of graph preview                             
+    var strGraphPath = window.external.ExtCall("ShowGraphPreview", graphName); 
+        
+    var JsonOutput = JSON.parse(strGraphPath);//Parse string to Json
+    if (strGraphPath == null)
     {
         document.getElementById("msg").className = "text-danger";
         document.getElementById("msg").innerHTML = "Failed to show preview!"; 
+        return null;
     }
     else
     {
-        $(document).on("dblclick", "#graphpreview img", function(){
+        var graphPath = "<img name=\"" +
+                    JsonOutput.Name +
+                    "\" src=\"" + 
+                    JsonOutput.Path + 
+                    "\" class=\"img-responsive center-block\"/>";
+                                
+        graphPreview += graphPath + "</div>";
+        
+        $(document).on("dblclick", ".graphpreview img", function(){
             var imgSource = $(this).attr("src");
             var graphName = imgSource.replace(/^.+?\\([^\\]+?)(\.[^\.\\]*?)?$/gi,"$1");
-            window.external.ExtCall("ActivePage", graphName);
+            if(window.external.ExtCall("ActivePage", graphName))
+            {
+                document.getElementById("msg").className = "text-success";
+                document.getElementById("msg").innerHTML = graphName + " is active.";
+                $("[data-toggle='popover']").popover("hide");
+            }
         });
-        
-        var graphName =  window.external.ExtCall("ShowGraphNameString", checkmode, objName);
-        document.getElementById("msg").className = "text-success";
-        document.getElementById("msg").innerHTML = graphName; 
-        $("#msg").append(" Double click the preview to active its graph window.");
+    
+        return graphPreview;
     }
 }
 

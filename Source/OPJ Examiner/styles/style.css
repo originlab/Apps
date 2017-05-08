@@ -33,7 +33,7 @@ body {
   overflow:auto;
 }
 .container .panel-graphpreview{
-  height:305px;
+  height:180px;
   overflow:auto;
 }
 .container .panel-table2{
@@ -48,3 +48,6 @@ body {
   text-align: center;
 }
 
+a:hover{
+ cursor:pointer;
+}
