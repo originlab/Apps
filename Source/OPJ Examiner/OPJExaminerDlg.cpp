@@ -41,7 +41,7 @@ protected:
 		return GetFilePath(strFile) + "OPJExaminer.html";
 	}
 	// Return title of dialog.
-	string GetDialogTitle() {return "OPJ Examiner Dialog";}
+	string GetDialogTitle() {return "OPJ Examiner";}
 
 public:
 	int Create(HWND hParent = NULL)
@@ -63,8 +63,8 @@ protected:
 	}
 	BOOL GetDlgInitSize(int& width, int& height) // when the dialog is ready, need to init the size and position of dialog
 	{
-		width = 788;
-		height = 672;
+		width = 723;
+		height = 531;
 		return TRUE;
 	}
 	
