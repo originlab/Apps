@@ -49,25 +49,43 @@ window.onload = function(){
                     title: "Graph Preview",
                     content: graphPreview,
                     viewport: "#tab-1"
-                }).on("mouseover", function (){
-                        clearTimeout(enterTimer);
-                        clearTimeout(leaveTimer);
+                })
+                .on("mouseover", function (){
+                        if(enterTimer)
+                        {
+                            clearTimeout(enterTimer);
+                        }
+                        if(leaveTimer)
+                        {
+                            clearTimeout(leaveTimer);
+                        }
+                        
                         //Close all other popovers
                         $("[data-toggle='popover']").not($anchor).popover("hide");
+                        
                         //Start new timeout to show popover
                         enterTimer = setTimeout(function(){
                             $anchor.popover("show");
                             document.getElementById("msg").className = "text-success";
-                            document.getElementById("msg").innerHTML =  "Double click on the preview to activate the graph window.";    
+                            document.getElementById("msg").innerHTML =  "Double click on the preview to activate the graph window."; 
+                            
+                            $(".popover").on("mouseleave", function (){
+                                $anchor.popover("hide");
+                                document.getElementById("msg").className = "text-success";
+                                document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";   
+                            });         
                         },500);     
-                        $(".popover").on("mouseout", function (){
-                            $anchor.popover("hide");
-                            document.getElementById("msg").className = "text-success";
-                            document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";   
-                        });
-                }).on("mouseleave", function (){
-                        clearTimeout(enterTimer);
-                        clearTimeout(leaveTimer); 
+                })
+                .on("mouseleave", function (){
+                        if(enterTimer)
+                        {
+                            clearTimeout(enterTimer);
+                        }
+                        if(leaveTimer)
+                        {
+                            clearTimeout(leaveTimer); 
+                        }
+                        
                         leaveTimer = setTimeout(function(){
                             if (!$(".popover:hover").length)
                             {
@@ -302,7 +320,7 @@ function showCurrentAcitve(currentname)
     data += "<small class=\"text-primary\">" +
             "* " +
             currentname +
-            "</small>";
+            "</small></br>";
     document.getElementById("ActiveBookMsg").style.display = "block"; 
     document.getElementById("ActiveBookMsg").innerHTML = data;     
 }
@@ -311,7 +329,7 @@ function showCurrentAcitve(currentname)
 //and then construct a graph preview div
 function constructGraphPreview(graphName)
 {
-    var graphPreview = "<div class=\"panel-graphpreview graphpreview\">";
+    var graphPreview = "<div class=\"graphpreview\">";
     //This is the function to call OC to append the paths of graph preview                             
     var strGraphPath = window.external.ExtCall("ShowGraphPreview", graphName); 
         
@@ -360,15 +378,16 @@ function newTab2Table(RowsNum)
     }
     else
     {
-        var data = "";   
+        var data = ""; 
+        data += "<div class=\"table-responsive\">";  
         data += "<table id=\"tb2\" class=\"table table-condensed table-hover\">";   // Set the head for table
         data += "<thead>" + 
                 "<tr>" + 
-                "<th>#<img src=\"icon/expand.png\" width=\"5\"></th>" +   
-                "<th>Short Name <img src=\"icon/expand.png\" width=\"5\"></th>" + 
-                "<th>Long Name <img src=\"icon/expand.png\" width=\"5\"></th>" +  
-                "<th>Project Folder <img src=\"icon/expand.png\" width=\"5\"></th>" + 
-                "<th>Size <img src=\"icon/expand.png\" width=\"5\"></th>" + 
+                "<th># <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></span></th>" +
+                "<th>Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
+                "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th><input type=\"checkbox\" id=\"checkbox0\"><label for=\"checkbox0\">Delete</label></th>" + 
                 "</tr>" +
                 "</thead>" +
@@ -386,6 +405,7 @@ function newTab2Table(RowsNum)
         } 
         data += "</tbody>";    
         data += "</table>"; 
+        data += "</div>";
         document.getElementById("table2").style.display = "block";   
         document.getElementById("table2").innerHTML = data;    
     }
@@ -435,16 +455,17 @@ function newTab3Table(RowsNum)
     }
     else
     {
-        var data = "";   
-        data += "<table id=\"tb3\" class=\"table table-condensed table-hover\">";   // Set the head for table
+        var data = "";  
+        data += "<div class=\"table-responsive\">";  
+        data += "<table id=\"tb3\" class=\"table table-condensed table-hover\">";   // Set the head for table      
         data += "<thead>" + 
                 "<tr>" + 
-                "<th>#<img src=\"icon/expand.png\" width=\"5\"></th>" +   
-                "<th>Short Name <img src=\"icon/expand.png\" width=\"5\"></th>" + 
-                "<th>Long Name <img src=\"icon/expand.png\" width=\"5\"></th>" +  
-                "<th>Project Folder <img src=\"icon/expand.png\" width=\"5\"></th>" + 
-                "<th>Size <img src=\"icon/expand.png\" width=\"5\"></th>" + 
-                "<th>Number of Dependents <img src=\"icon/expand.png\" width=\"5\"></th>" + 
+                "<th># <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +   
+                "<th>Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
+                "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Number of Dependents <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "</tr>" +
                 "</thead>" +
                 "<tbody>";   
@@ -461,6 +482,7 @@ function newTab3Table(RowsNum)
         } 
         data += "</tbody>";    
         data += "</table>"; 
+        data += "</div>";
         document.getElementById("table3").style.display = "block";   
         document.getElementById("table3").innerHTML = data;    
     }

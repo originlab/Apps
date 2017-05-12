@@ -18,23 +18,21 @@
     <body>
         
         <div class="container theme-showcase" role="main">
-            <!--<div class="page-header">-->
-                <h3 class="text-center">OPJ Examiner</h3>
-            <!--</div>-->
+            <p class="text-center h3">OPJ Examiner</p>
 
             <div class="tabs">
                 
-                <ul class="nav nav-tabs" role="tablist">
-                    <li role="presentation" class="active"><a href="#tab-1" data-toggle="tab">Dependents Browser</a></li>
-
-                    <li role="presentation"><a href="#tab-2" data-toggle="tab">Independent Books</a></li>
+                <ul class="nav nav-tabs" role="tablist"> 
+                    <li role="presentation" class="active"><a href="#tab-2" data-toggle="tab">Independent Books</a></li>
                     
                     <li role="presentation"><a href="#tab-3" data-toggle="tab">Dependent Books</a></li>
+
+                    <li role="presentation"><a href="#tab-1" data-toggle="tab">Dependents Browser</a></li>
                 </ul>
                 
                 <div class="tab-content" id="tabContent">
                     <!--tab1-Dependents Broswer-->
-                    <div class="tab-pane fade in active" id="tab-1">
+                    <div id="tab-1" class="tab-pane fade">
                         <!--Radio button is used to select to show which list in tab-->
                         <div class="panel panel-default">
                             <div class="panel-body">
@@ -57,24 +55,47 @@
                                     </tr>
                                     <tr>
                                         <td>
-                                            <button id="tab1Check" type="button" class="btn btn-default">Check</button>
+                                            <div class="container">
+                                                <div class="row">
+                                                    <div class="col-md-6 col-sm-6 col-xs-6">
+                                                        <button id="tab1Check" type="button" class="btn btn-default btn-block">
+                                                            <span class="glyphicon glyphicon-check" aria-hidden="true"></span>
+                                                            <span>Check</span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 </table>
                             </div>
                         </div>
                         <!--There are only one panel in Tab1--> 
-                        <div id="ActiveBookMsg" style="display: none" mce_style="display: none"></div>
+                        <div class="container">
+                            <div id="ActiveBookMsg" style="display: none" mce_style="display: none"></div>
+                        </div>
                         <!--The Main panel will show a table-->
                         <div class="panel-table1" id="table1" style="display: none" mce_style="display: none"></div>
                     </div>
                     <!--tab2-Independent Book-->
-                    <div id="tab-2" class="tab-pane fade">
+                    <div id="tab-2" class="tab-pane fade in active">
                         <div class="panel panel-default">
                             <div class="panel-body">
-                                <div class="btn-group">                    
-                                    <button id="tab2Find" type="button" class="btn btn-default">Find</button>
-                                    <button id="tab2Delete" type="button" class="btn btn-default" disabled>Delete</button>
+                                <div class="container">
+                                    <div class="row">
+                                        <div class="col-md-4 col-sm-4 col-xs-8">
+                                            <div class="btn-group btn-group-justified">
+                                                <button id="tab2Find" type="button" class="btn btn-default">
+                                                    <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                                                    <span>Search All</span>
+                                                </button>
+                                                <button id="tab2Delete" type="button" class="btn btn-default" disabled>
+                                                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                                    <span>Delete</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -85,8 +106,17 @@
                     <!--tab3-Dependent Book-->
                     <div id="tab-3" class="tab-pane fade">
                         <div class="panel panel-default">
-                            <div class="panel-body">                 
-                                <button id="tab3Find" type="button" class="btn btn-default">Find</button>
+                            <div class="panel-body">
+                                <div class="container">
+                                    <div class="row">
+                                        <div class="col-md-2 col-sm-2 col-xs-4">                 
+                                            <button id="tab3Find" type="button" class="btn btn-default btn-block">
+                                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                                                <span>Search All</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <!--There is only one panel in Tab3-->
