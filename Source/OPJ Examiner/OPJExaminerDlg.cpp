@@ -50,15 +50,23 @@ public:
 		int nRet = HTMLDlg::Create(hParent);
 		ModifyStyle(0, WS_MAXIMIZEBOX);
 		//ModifyStyle(WS_THICKFRAME, 0); // Remove sizing border.
-		m_dhtml.UpdateWindow();
 		
+		//-----Yuki 2017-05-17 APPS_280-S1 CHANGE_TO_USE_SYS_VAR_FOR_DPI
+		okutil_sys_values("BDPI", &m_dSave);//Remember current into dialog variable
+		double dTemp=1;
+		okutil_sys_values("BDPI", &dTemp, false);//Set @BDPI=1
+		
+		m_dhtml.UpdateWindow();
 		return nRet;
 	}
 protected:
 	BOOL OnDestroy()
 	{
 		HTMLDlg::OnDestroy();
-		s_pDlg = NULL;		delete this;
+		s_pDlg = NULL;
+		okutil_sys_values("BDPI", &m_dSave, false);//Restore @BDPI=0
+		//-----END CHANGE_TO_USE_SYS_VAR_FOR_DPI
+		delete this;
 		return TRUE;
 	}
 	BOOL GetDlgInitSize(int& width, int& height) // when the dialog is ready, need to init the size and position of dialog
@@ -109,7 +117,7 @@ public:
 		Object jsscript = m_dhtml.GetScript();
 		if(!jsscript)
 			return -1;
-		jsscript.newTab1Table(nNum);
+		jsscript.newTab1Table(nNum, strMode);
 		
 		int nRowIndex = 1;
 		if(strMode == "sheet")
@@ -224,7 +232,7 @@ public:
 	{
 		PageBase pg(strbookName);
 		if(!pg)
-			return false;
+			return false;   
 		else
 			pg.SetShow(PAGE_ACTIVATE); 
 			return true;
@@ -473,6 +481,7 @@ private:
 	Page m_pg;
 	Worksheet m_wks;
 	MatrixLayer m_matrixly;
+	double m_dSave;
 };
 
 BEGIN_DISPATCH_MAP(OPJExaminerDlg, HTMLDlg)

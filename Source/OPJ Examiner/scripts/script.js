@@ -32,7 +32,7 @@ window.onload = function(){
         else
         {
             document.getElementById("msg").className = "text-success";
-            document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";    
+            document.getElementById("msg").innerHTML =  "Hover on the graph name to show preview.";    
                                             
             //When hover on the graph name (link) in Table1 
             $("#tb1 a").each(function(){
@@ -68,7 +68,18 @@ window.onload = function(){
                             $anchor.popover("show");
                             document.getElementById("msg").className = "text-success";
                             document.getElementById("msg").innerHTML =  "Double click on the preview to activate the graph window."; 
-                            
+                            //---YUKI 2017-05-18 APPS_280-P2 FIX_ACTIVATE_GRAPH_PAGE_CALLED_REPEATEDLY
+                            $(".graphpreview img").bind("dblclick", function(){
+                                var imgSource = $(this).attr("src");
+                                var graphName = imgSource.replace(/^.+?\\([^\\]+?)(\.[^\.\\]*?)?$/gi,"$1"); 
+                                if(window.external.ExtCall("ActivePage", graphName))
+                                {
+                                    document.getElementById("msg").className = "text-success";
+                                    document.getElementById("msg").innerHTML = graphName + " is already active.";
+                                    $("[data-toggle='popover']").popover("hide");
+                                }
+                            }); 
+                            //--- END FIX_ACTIVATE_GRAPH_PAGE_CALLED_REPEATEDLY
                             $(".popover").on("mouseleave", function (){
                                 $anchor.popover("hide");
                                 document.getElementById("msg").className = "text-success";
@@ -94,7 +105,7 @@ window.onload = function(){
                                 document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";   
                             }
                         },100);
-                });
+                });                         
             }); 
         }
     });
@@ -121,14 +132,14 @@ window.onload = function(){
         else if (findStatus == 0)
         {
             document.getElementById("msg").className = "text-danger";
-            document.getElementById("msg").innerHTML = "There is no Independent book in this project!"; 
+            document.getElementById("msg").innerHTML = "There are no independent book in this project."; 
             document.getElementById("table2").style.display = "none";
             return;
         }
         else
         {
             document.getElementById("msg").className = "text-success";
-            document.getElementById("msg").innerHTML = "Double click on any row to activate the book!"; 
+            document.getElementById("msg").innerHTML = "Double click on any row to activate the book."; 
             //4. Enable to sort table by clicking table header
             $(function(){
             $("#tb2").tablesorter();
@@ -136,7 +147,7 @@ window.onload = function(){
             //5. Enable to check/uncheck DeleteAll checkbox to check/uncheck all the checkboxes
             var deletecheck = document.getElementById("checkbox0");
             deletecheck.addEventListener("click", function(){
-                if($(this).is(':checked'))
+                if($(this).is(":checked"))
                 {
                     $(":checkbox").each(function() {
                     this.checked = true;                        
@@ -181,7 +192,7 @@ window.onload = function(){
                                             if(window.external.ExtCall("ActivePage", bookName))
                                             {
                                                 document.getElementById("msg").className = "text-success";
-                                                document.getElementById("msg").innerHTML = "Active " + bookName + "."; 
+                                                document.getElementById("msg").innerHTML =  bookName + " is already active."; 
                                             }
                                             else
                                             {
@@ -255,7 +266,7 @@ window.onload = function(){
                                             if(window.external.ExtCall("ActivePage", bookName))
                                             {
                                                 document.getElementById("msg").className = "text-success";
-                                                document.getElementById("msg").innerHTML = "Active " + bookName + "."; 
+                                                document.getElementById("msg").innerHTML = bookName + " is already active."; 
                                             }
                                             else
                                             {
@@ -275,14 +286,24 @@ window.onload = function(){
 // a dynamic table in the first tab 
 function newTab1Table(RowsNum, checkmode) 
 {     
+    var tableHeader;
+    if(checkmode=="sheet")
+    {
+        tableHeader = "Sheet";
+    }
+    else if(checkmode=="column")
+    {
+        tableHeader = "Column";
+    }
+    
     var data = "";
     data += "<div class=\"table-responsive\">";
     data += "<table id=\"tb1\" class=\"table table-condensed table-hover\">";   // Set the head for table
     data += "<thead>" + 
             "<tr>" + 
             "<th>#</th>" +   
-            "<th>Short Name</th>" + 
-            "<th>Long Name</th>" +  
+            "<th>" + tableHeader + " Short Name</th>" + 
+            "<th>" + tableHeader + " Long Name</th>" +  
             "<th>Graph Short Names</th>" + 
             "</tr>" +
             "</thead>" +
@@ -317,10 +338,10 @@ function showTab1OneRow(stringOutput, RowIndex)
 function showCurrentAcitve(currentname)
 {
     var data = "";
-    data += "<small class=\"text-primary\">" +
-            "* " +
+    data += "<font class=\"text-primary\">" +
+            "* The active book is " +
             currentname +
-            "</small></br>";
+            "</font></br>";
     document.getElementById("ActiveBookMsg").style.display = "block"; 
     document.getElementById("ActiveBookMsg").innerHTML = data;     
 }
@@ -347,20 +368,19 @@ function constructGraphPreview(graphName)
                     "\" src=\"" + 
                     JsonOutput.Path + 
                     "\" class=\"img-responsive center-block\"/>";
-                                
-        graphPreview += graphPath + "</div>";
-        
-        $(document).on("dblclick", ".graphpreview img", function(){
-            var imgSource = $(this).attr("src");
-            var graphName = imgSource.replace(/^.+?\\([^\\]+?)(\.[^\.\\]*?)?$/gi,"$1");
-            if(window.external.ExtCall("ActivePage", graphName))
-            {
-                document.getElementById("msg").className = "text-success";
-                document.getElementById("msg").innerHTML = graphName + " is active.";
-                $("[data-toggle='popover']").popover("hide");
-            }
-        });
-    
+        //---YUKI 2017-05-18 APPS_280-P1 FIX_ACTIVATE_GRAPH_PAGE_CALLED_REPEATEDLY
+        // $(document).on("dblclick", ".graphpreview img", function() {
+        //     var imgSource = $(this).attr("src");
+        //     var graphName = imgSource.replace(/^.+?\\([^\\]+?)(\.[^\.\\]*?)?$/gi,"$1"); 
+        //     if(window.external.ExtCall("ActivePage", graphName))
+        //     {
+        //         document.getElementById("msg").className = "text-success";
+        //         document.getElementById("msg").innerHTML = graphName + " is already active.";
+        //         $("[data-toggle='popover']").popover("hide");
+        //     }
+        // }); 
+        //--- END FIX_ACTIVATE_GRAPH_PAGE_CALLED_REPEATEDLY                       
+        graphPreview += graphPath + "</div>";  
         return graphPreview;
     }
 }
@@ -384,11 +404,11 @@ function newTab2Table(RowsNum)
         data += "<thead>" + 
                 "<tr>" + 
                 "<th># <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></span></th>" +
-                "<th>Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
-                "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
+                "<th>Book Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Book Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
                 "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
-                "<th><input type=\"checkbox\" id=\"checkbox0\"><label for=\"checkbox0\">Delete</label></th>" + 
+                "<th><input type=\"checkbox\" id=\"checkbox0\"></th>" + //<label for=\"checkbox0\">Delete</label></th>" + 
                 "</tr>" +
                 "</thead>" +
                 "<tbody>";   
@@ -461,8 +481,8 @@ function newTab3Table(RowsNum)
         data += "<thead>" + 
                 "<tr>" + 
                 "<th># <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +   
-                "<th>Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
-                "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
+                "<th>Book Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Book Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
                 "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Number of Dependents <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 

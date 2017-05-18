@@ -10,7 +10,8 @@ body {
   margin-bottom: 0rem;
 }
 
-@media only screen and (min-width: 1200px){
+/*-----Yuki 2017-05-17 APPS_280-S1 CHANGE_TO_USE_SYS_VAR_FOR_DPI*/
+/*@media only screen and (min-width: 1200px){
   html {
     font-size: 20px;
   } 
@@ -20,7 +21,8 @@ body {
   .btn-default {
     font-size: 1rem;
   }
-}
+}*/
+/*-----END CHANGE_TO_USE_SYS_VAR_FOR_DPI*/
 
 .footer {
   position: absolute;
@@ -37,37 +39,33 @@ body {
 -------------------------------------------------- */
 /* Not required for template or sticky footer method. */
 
-.h3{
-  font-size: 1.7rem;
-}
-
 .container {
   width: auto;
-  /*padding: 1rem 1rem;*/
   padding: 1.5% 1.5%;
 }
 
-.container .panel-table1{
+.container .panel-table1 {
   bottom: 12%;
-  max-height: 15rem;
-  overflow-y:auto;
+  max-height: 14rem;
+  overflow-y: auto;
 }
-.container .panel-table2{
+.container .panel-table2 {
   bottom: 12%;
   max-height: 22rem;
-  overflow-y:auto;
+  overflow-y: auto;
 }
 
 .table-responsive{
   padding: 0% 0% 2% 0%;
 }
 
-.table thead{
-  cursor:pointer;
+.table td, 
+.table th {
+  text-align: center;
 }
 
-.table th, .table td {
-  text-align: center;
+.table thead{
+  cursor:pointer;
 }
 
 a:hover{
