@@ -15,27 +15,35 @@
         <link href="styles/style.css" rel="stylesheet">
     </head>
 
-    <body>
-        
+    <body>     
         <div class="container theme-showcase" role="main">
             <h3 class="text-center">OPJ Examiner</h3>
 
             <div class="tabs">
-                
+                <!--tab list-->
                 <ul class="nav nav-tabs" role="tablist"> 
-                    <li role="presentation" class="active"><a href="#tab-2" data-toggle="tab">Independent Books</a></li>
+                    <!--Yuki 2017-05-19 APPS_280-S3 LABEL CHANGES AND TOOLTIPS-->
+                    <li role="presentation" class="active">
+                        <a href="#tab-2" class="white-tooltip" data-toggle="tab" title="Find all books without any graph dependent in this project">Independent Books</a>
+                    </li>
                     
-                    <li role="presentation"><a href="#tab-3" data-toggle="tab">Dependent Books</a></li>
+                    <li role="presentation">
+                        <a href="#tab-3" class="white-tooltip" data-toggle="tab" title="Find all books with graphs dependent in this project">Dependent Books</a>
+                    </li>
 
-                    <li role="presentation"><a href="#tab-1" data-toggle="tab">Dependents Browser</a></li>
+                    <li role="presentation">
+                        <a href="#tab-1" class="white-tooltip" data-toggle="tab" title="Check all graph dependents for one active books">Dependents Browser</a>
+                    </li>
+                    <!--End LABEL CHANGES AND TOOLTIPS-->
                 </ul>
-                
+                <!--tab body-->
                 <div class="tab-content" id="tabContent">
                     <!--tab1-Dependents Broswer-->
                     <div id="tab-1" class="tab-pane fade">
-                        <!--Radio button is used to select to show which list in tab-->
                         <div class="panel panel-default">
+                        <!--Radio button is used to select to show which list in tab-->
                             <div class="panel-body">
+                                <!--tab1 radio group-->
                                 <table>
                                     <tr>
                                         <td>
@@ -67,23 +75,23 @@
                                             </div>
                                         </td>
                                     </tr>
-                                </table>
+                                </table> 
                             </div>
                         </div>
-                        <!--There are only one panel in Tab1--> 
                         <div class="container">
                             <div id="ActiveBookMsg" style="display: none" mce_style="display: none"></div>
                         </div>
-                        <!--The Main panel will show a table-->
+                        <!--tab1 table-->
                         <div class="panel-table1" id="table1" style="display: none" mce_style="display: none"></div>
                     </div>
                     <!--tab2-Independent Book-->
                     <div id="tab-2" class="tab-pane fade in active">
                         <div class="panel panel-default">
                             <div class="panel-body">
-                                <div class="container">
+                                <!--tab2 button group-->
+                                <div class="container">      
                                     <div class="row">
-                                        <div class="col-md-4 col-sm-4 col-xs-8">
+                                        <div class="col-md-6 col-sm-6 col-xs-10">
                                             <div class="btn-group btn-group-justified">
                                                 <button id="tab2Find" type="button" class="btn btn-default">
                                                     <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
@@ -99,8 +107,7 @@
                                 </div>
                             </div>
                         </div>
-                        <!--There is only one panel in Tab2-->
-                        <!--This main panel will show a table-->
+                        <!--tab2 table-->
                         <div class="panel-table2" id="table2" style="display: none" mce_style="display: none"></div>
                     </div>
                     <!--tab3-Dependent Book-->
@@ -109,7 +116,7 @@
                             <div class="panel-body">
                                 <div class="container">
                                     <div class="row">
-                                        <div class="col-md-2 col-sm-2 col-xs-4">                 
+                                        <div class="col-md-3 col-sm-3 col-xs-6">                 
                                             <button id="tab3Find" type="button" class="btn btn-default btn-block">
                                                 <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                                                 <span>Find/Update</span>
@@ -118,10 +125,9 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <!--There is only one panel in Tab3-->
-                        <!--This main panel will show a table-->
-                        <div class="panel-table2" id="table3" style="display: none" mce_style="display: none"></div>
+                        </div> 
+                        <!--tab3 table-->
+                        <div class="panel-table2" id="table3" style="display: none" mce_style="display: none"></div>                
                     </div>
                 </div>
             </div>        

@@ -29,7 +29,6 @@ body {
   bottom: 0;
   width: 100%;
   /* Set the fixed height of the footer here */
-  /*height: 5rem;*/
   height: 11%;
   background-color: #f5f5f5;
 }
@@ -41,17 +40,25 @@ body {
 
 .container {
   width: auto;
-  padding: 1.5% 1.5%;
+  padding: 1% 1%;
 }
 
-.container .panel-table1 {
-  bottom: 12%;
-  max-height: 14rem;
+.panel-table1 {
+  /*-----Yuki 2017-05-25 APPS_280-S2 RESIZE TABLE WHEN RESIZE DIALOG*/
+  position: absolute;
+  top: 30rem;
+  bottom: 11%;
+  width: 98%;
+  /*END RESIZE TABLE WHEN RESIZE DIALOG*/
   overflow-y: auto;
 }
-.container .panel-table2 {
-  bottom: 12%;
-  max-height: 22rem;
+.panel-table2 {
+  /*-----Yuki 2017-05-25 APPS_280-S2 RESIZE TABLE WHEN RESIZE DIALOG*/
+  position: absolute;
+  top: 21rem;
+  bottom: 11%;
+  width: 98%;
+  /*END RESIZE TABLE WHEN RESIZE DIALOG*/
   overflow-y: auto;
 }
 
@@ -71,3 +78,10 @@ body {
 a:hover{
  cursor:pointer;
 }
+/*-----Yuki 2017-05-19 APPS_280-S3 LABEL CHANGES AND TOOLTIPS*/
+.tooltip.right .tooltip-inner {
+    background-color: white;
+    color: #333;
+    border: solid 1px #333;
+}
+/*END LABEL CHANGES AND TOOLTIPS*/

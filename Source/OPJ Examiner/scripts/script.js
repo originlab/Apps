@@ -1,8 +1,18 @@
 // This function will be called after the entire document has
 // finished loading.
 window.onload = function(){
-           
+    //-----Yuki 2017-05-19 APPS_280-S3 LABEL CHANGES AND TOOLTIPS
+    //Initial tooltip
+    $("[data-toggle='tab']").tooltip({
+        animate: true,
+        container: "body",
+        delay: { "show": 1000},
+        placement: "right",
+        trigger: "hover",        
+    });   
+    //End LABEL CHANGES AND TOOLTIPS 
     //***************
+    
     // This fucntion will be triggered by clicking Check button
     var check1 = document.getElementById("tab1Check");
     // When click Check button in Tab1.
@@ -42,13 +52,14 @@ window.onload = function(){
                 var enterTimer, leaveTimer;
                 
                 //Initialize popover
-                $anchor.popover({    
+                $anchor.popover({ 
+                    container: "#tab-1",   
                     html: "true",
                     placement : "top",
                     trigger: "manual",
                     title: "Graph Preview",
                     content: graphPreview,
-                    viewport: "#tab-1"
+                    // viewport: "#tab-1"
                 })
                 .on("mouseover", function (){
                         if(enterTimer)
@@ -302,8 +313,8 @@ function newTab1Table(RowsNum, checkmode)
     data += "<thead>" + 
             "<tr>" + 
             "<th>#</th>" +   
-            "<th>" + tableHeader + " Short Name</th>" + 
-            "<th>" + tableHeader + " Long Name</th>" +  
+            "<th>" + tableHeader + "</th>" + 
+            "<th>Long Name</th>" +  
             "<th>Graph Short Names</th>" + 
             "</tr>" +
             "</thead>" +
@@ -353,16 +364,20 @@ function constructGraphPreview(graphName)
     var graphPreview = "<div class=\"graphpreview\">";
     //This is the function to call OC to append the paths of graph preview                             
     var strGraphPath = window.external.ExtCall("ShowGraphPreview", graphName); 
-        
-    var JsonOutput = JSON.parse(strGraphPath);//Parse string to Json
-    if (strGraphPath == null)
+    //-----Yuki 2017-05-23 APPS_280-P1 FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL
+    //var JsonOutput = JSON.parse(strGraphPath);//Parse string to Json
+    //END FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL   
+    if (strGraphPath == "0")
     {
         document.getElementById("msg").className = "text-danger";
-        document.getElementById("msg").innerHTML = "Failed to show preview!"; 
+        document.getElementById("msg").innerHTML = "Failed to get preview!"; 
         return null;
     }
     else
     {
+        //-----Yuki 2017-05-23 APPS_280-P1 FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL
+        var JsonOutput = JSON.parse(strGraphPath);//Parse string to Json
+        //END FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL
         var graphPath = "<img name=\"" +
                     JsonOutput.Name +
                     "\" src=\"" + 
@@ -404,8 +419,8 @@ function newTab2Table(RowsNum)
         data += "<thead>" + 
                 "<tr>" + 
                 "<th># <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></span></th>" +
-                "<th>Book Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
-                "<th>Book Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
+                "<th>Book<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
                 "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th><input type=\"checkbox\" id=\"checkbox0\"></th>" + //<label for=\"checkbox0\">Delete</label></th>" + 
@@ -481,8 +496,8 @@ function newTab3Table(RowsNum)
         data += "<thead>" + 
                 "<tr>" + 
                 "<th># <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +   
-                "<th>Book Short Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
-                "<th>Book Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
+                "<th>Book<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
                 "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Number of Dependents <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 

@@ -168,16 +168,16 @@ public:
 	{
 		Object jsscript = m_dhtml.GetScript();
 		if(!jsscript)
-			return NULL;
+			return "0";
 		
 		char TempPath[MAXFULLPATH];
 		DWORD nRet = GetTempPath(MAXFULLPATH, TempPath);
 		if(!nRet)
-			return NULL;
+			return "0";
 		
 		string strGraphPath = GetDependentGraphPreview(TempPath, strGraphName);
-		if(strGraphPath==NULL)
-			return NULL;
+		if(strGraphPath == NULL)
+			return "0";
 		return strGraphPath;
 	}
 	
