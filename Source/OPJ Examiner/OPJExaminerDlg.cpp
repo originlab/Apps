@@ -2,6 +2,48 @@
 #include <../OriginLab/DialogEx.h>
 #include <../OriginLab/HTMLDlg.h>
 
+//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+#include <operation.h>
+static int find_result_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNames)
+{
+    WorksheetPage wp = wks.GetPage();
+    if(!wp)
+        return false;
+    vector<uint> unOpIDs;
+    if(wks.FindOutgoingOperations(unOpIDs) <= 0)
+        return false;
+    vsNames.SetSize(0);
+    for(int ii = 0; ii < unOpIDs.GetSize(); ii++)
+    {
+        Operation &op = (Operation &)Project.GetOperationObject(unOpIDs[ii]);
+        if(op)
+        {
+            DataRange dr;
+            Worksheet wResult;
+            if(op_get_output(op, dr, wResult))
+            {
+                WorksheetPage wpr = wResult.GetPage();
+                if(wpr.GetName() != wp.GetName())
+                    vsNames.Add(wResult.GetName());
+            }
+        }
+    }
+    return vsNames.GetSize();
+}
+static int find_dependent_analysis_output_books(Page& pg)
+{
+	int nn = 0;
+	vector<string> vsNames;
+	foreach(Layer sheet in pg.Layers)
+	{
+		Datasheet wks = sheet;
+		nn += find_result_sheets_in_diff_book(wks, vsNames);
+	}
+		
+	return nn;
+}
+//--- end FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+
 //---- LabTalk Access
 class OPJExaminerDlg;
 static OPJExaminerDlg *s_pDlg = NULL;
@@ -418,8 +460,11 @@ private:
 	{
 		FindDependentHelper _dep;
 		vector<string> vsGraphName;
-		int nBooksNum = 0;
-		string strPageNameString;
+		//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+		//int nBooksNum = 0;
+		//string strPageNameString;
+		vsPageName.SetSize(0);
+		//---
 		foreach(PageBase pg in Project.Pages)
 		{
 			if(!pg.IsValid())
@@ -428,26 +473,38 @@ private:
 			if(nPageType == EXIST_WKS || nPageType == EXIST_MATRIX)
 			{
 				int nn = pg.FindDepdendentGraphs(vsGraphName);
+				//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+				Page pgBook = pg;
+				nn += find_dependent_analysis_output_books(pgBook);
 				if(bIndependentMode)
 				{
 					if(nn == 0)
 					{
-						strPageNameString += pg.GetName() + " ";
-						nBooksNum++;
+						//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+						//strPageNameString += pg.GetName() + " ";
+						//nBooksNum++;
+						vsPageName.Add(pg.GetName());
+						//---	
 					}
 				}
 				else
 				{
 					if(nn > 0)
 					{
-						strPageNameString += pg.GetName() + " ";
-						nBooksNum++;
+						//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+						//strPageNameString += pg.GetName() + " ";
+						//nBooksNum++;
+						vsPageName.Add(pg.GetName());
+						//---
 					}
 				}
 			}
 		}
-		int nRet = strPageNameString.GetTokens(vsPageName, ' ');
-		return nBooksNum;
+		//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+		//int nRet = strPageNameString.GetTokens(vsPageName, ' ');
+		//return nBooksNum;
+		return vsPageName.GetSize();
+		//---
 	}
 	
 	//This function is used to get 
