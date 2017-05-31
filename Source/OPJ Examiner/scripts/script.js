@@ -23,7 +23,6 @@ window.onload = function(){
         var checkmode = document.querySelector('input[name="checkmode"]:checked').value;
         //3. New a table and fill the table with dependents info
         var checkStatus = window.external.ExtCall("GetAllDependentsInfo", checkmode);
-        //var checkStatus = 1;
         //4. Show message in box
         if(checkStatus < 0)
         {
@@ -40,12 +39,12 @@ window.onload = function(){
             return;
         }
         else
-        {
+        {         
             document.getElementById("msg").className = "text-success";
             document.getElementById("msg").innerHTML =  "Hover on the graph name to show preview.";    
-                                            
+                                 
             //When hover on the graph name (link) in Table1 
-            $("#tb1 a").each(function(){
+            $("#tb1 a").each(function(){   
                 var $anchor = $(this);   
                 var graphName = $(this).text();        
                 var graphPreview = constructGraphPreview(graphName); 
@@ -131,10 +130,21 @@ window.onload = function(){
         document.getElementById("table2").style.display = "none";
         $("#tab2Delete").attr('disabled', 'disabled');
         //2. New a table and fill the table with dependents info
+        //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+        var startTime = new Date;
+        Timer = setInterval(function() {
+            document.getElementById("msg").className = "text-success";
+            document.getElementById("msg").innerHTML = "Finding / Updating... (" + Math.floor((new Date - startTime)/1000) + " Seconds)"; 
+        }, 1000);
+        //---END SCANNING_NEEDS_PROGRESS_INDICATION
+        
         var findStatus = window.external.ExtCall("GetIndependentBookInfo");
         //3. Show message in box
         if(findStatus < 0)
         {
+            //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+            clearInterval(Timer);
+            //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-danger";
             document.getElementById("msg").innerHTML = "Error!"; 
             document.getElementById("table2").style.display = "none";
@@ -142,6 +152,9 @@ window.onload = function(){
         }
         else if (findStatus == 0)
         {
+            //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+            clearInterval(Timer);
+            //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-danger";
             document.getElementById("msg").innerHTML = "There are no independent book in this project."; 
             document.getElementById("table2").style.display = "none";
@@ -149,6 +162,9 @@ window.onload = function(){
         }
         else
         {
+            //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+            clearInterval(Timer);
+            //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-success";
             document.getElementById("msg").innerHTML = "Double click on any row to activate the book."; 
             //4. Enable to sort table by clicking table header
@@ -235,11 +251,23 @@ window.onload = function(){
     find3.addEventListener("click", function(){
         //1. Hide table3 div
         document.getElementById("table3").style.display = "none";
+        
+        //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+        var startTime = new Date;
+        Timer = setInterval(function() {
+            document.getElementById("msg").className = "text-success";
+            document.getElementById("msg").innerHTML = "Finding / Updating... (" + Math.floor((new Date - startTime)/1000) + " Seconds)"; 
+        }, 1000);
+        //---END SCANNING_NEEDS_PROGRESS_INDICATION
+        
         //2. New a table and fill the table with dependents info
         var findStatus = window.external.ExtCall("GetDependentBookInfo");
         //3. Show message in box
         if(findStatus < 0)
         {
+            //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+            clearInterval(Timer);
+            //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-danger";
             document.getElementById("msg").innerHTML = "Error!"; 
             document.getElementById("table3").style.display = "none";
@@ -247,13 +275,19 @@ window.onload = function(){
         }
         else if (findStatus == 0)
         {
-             document.getElementById("msg").className = "text-danger";
+            //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+            clearInterval(Timer);
+            //---END SCANNING_NEEDS_PROGRESS_INDICATION
+            document.getElementById("msg").className = "text-danger";
             document.getElementById("msg").innerHTML = "There is no book with dependent in this project!"; 
             document.getElementById("table3").style.display = "none";
             return;
         }
         else
         {
+            //-----Yuki 2017-05-31 APPS_280-S5 SCANNING_NEEDS_PROGRESS_INDICATION
+            clearInterval(Timer);
+            //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-success";
             document.getElementById("msg").innerHTML = "Double click on any row to activate the book!"; 
             //4. Enable to sort table by clicking table header
@@ -300,11 +334,17 @@ function newTab1Table(RowsNum, checkmode)
     var tableHeader;
     if(checkmode=="sheet")
     {
-        tableHeader = "Sheet";
+        tableHeader_1 = "Sheet";
+        //-----Yuki 2017-05-31 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+        tableHeader_3= "Dependent Short Names"
+        //--- END APPS_280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
     }
     else if(checkmode=="column")
     {
-        tableHeader = "Column";
+        tableHeader_1 = "Column";
+        //-----Yuki 2017-05-31 APPS_280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+        tableHeader_3= "Graph Short Names"
+        //--- END APPS_280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
     }
     
     var data = "";
@@ -313,9 +353,9 @@ function newTab1Table(RowsNum, checkmode)
     data += "<thead>" + 
             "<tr>" + 
             "<th>#</th>" +   
-            "<th>" + tableHeader + "</th>" + 
+            "<th>" + tableHeader_1 + "</th>" + 
             "<th>Long Name</th>" +  
-            "<th>Graph Short Names</th>" + 
+            "<th>" + tableHeader_3 + "</th>" + 
             "</tr>" +
             "</thead>" +
             "<tbody>";   

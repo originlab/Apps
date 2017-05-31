@@ -94,7 +94,7 @@ public:
 		//ModifyStyle(WS_THICKFRAME, 0); // Remove sizing border.
 		
 		//-----Yuki 2017-05-17 APPS_280-S1 CHANGE_TO_USE_SYS_VAR_FOR_DPI
-		okutil_sys_values("BDPI", &m_dSave);//Remember current into dialog variable
+		okutil_sys_values("BDPI", &m_sysValBDPI);//Remember current into dialog variable
 		double dTemp=1;
 		okutil_sys_values("BDPI", &dTemp, false);//Set @BDPI=1
 		
@@ -106,7 +106,7 @@ protected:
 	{
 		HTMLDlg::OnDestroy();
 		s_pDlg = NULL;
-		okutil_sys_values("BDPI", &m_dSave, false);//Restore @BDPI=0
+		okutil_sys_values("BDPI", &m_sysValBDPI, false);//Restore @BDPI=0
 		//-----END CHANGE_TO_USE_SYS_VAR_FOR_DPI
 		delete this;
 		return TRUE;
@@ -231,7 +231,7 @@ public:
 		vector<string> vsGraphName;
 		string strGraphName = "(";
 		if(!DependentsVector(strMode, strObjName, vsGraphName))
-			return "Failded!";
+			return "Failed!";
 		for(int ii = 0; ii < vsGraphName.GetSize(); ii++ )
 		{
 			strGraphName += vsGraphName[ii] + " ";
@@ -356,20 +356,33 @@ private:
 	string GetOneObjectDependents(OriginObject obj)
 	{
 		FindDependentHelper _dep;
-		vector<string> vs;
-		int nn;
+		int nn,mm;
+		string strDependents;
+		vector<string> vsGraph, vsSheet;
 		stOneObjectDependents stOneResult;
 		
-		nn = obj.FindDepdendentGraphs(vs);
+		
 		stOneResult.SN = obj.GetName();
 		stOneResult.LN = obj.GetLongName();
-	
-		string strDependents;
-		int nSize = vs.GetSize();
-		for(int ii =0; ii < nSize; ii++)
+		nn = obj.FindDepdendentGraphs(vsGraph);
+		//int nSize = vsGraph.GetSize();
+		for(int ii = 0; ii < vsGraph.GetSize(); ii++)
 		{
-			strDependents += "<a data-toggle=\"popover\">" + vs[ii] + "</a>" + " "; 
+			strDependents += "<a data-toggle=\"popover\">" + vsGraph[ii] + "</a>" + " "; 
 		}
+		
+		//--- Yuki 5/31/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+		Datasheet dts;
+		dts = obj;
+		if(dts)
+		{
+			mm = find_result_sheets_in_diff_book(dts, vsSheet);
+			for(ii = 0; ii < vsSheet.GetSize(); ii++)
+			{
+				strDependents += vsSheet[ii] + " "; 
+			}
+		}
+		//---END APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 		stOneResult.Name = strDependents;
 		
 		string strOutput;
@@ -526,7 +539,11 @@ private:
 			vector<string> vs;
 			int nn;
 			nn = pg.FindDepdendentGraphs(vs);
-			stOneResult.Num = vs.GetSize();
+			//--- Yuki 5/31/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+			int mm;
+			mm += find_dependent_analysis_output_books(pg);
+			stOneResult.Num = vs.GetSize() + mm;
+			//--- END FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 		}
 		
 		string strOneIndependent;
@@ -538,7 +555,7 @@ private:
 	Page m_pg;
 	Worksheet m_wks;
 	MatrixLayer m_matrixly;
-	double m_dSave;
+	double m_sysValBDPI;
 };
 
 BEGIN_DISPATCH_MAP(OPJExaminerDlg, HTMLDlg)
