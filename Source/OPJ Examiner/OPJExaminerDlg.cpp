@@ -24,7 +24,10 @@ static int find_result_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNam
             {
                 WorksheetPage wpr = wResult.GetPage();
                 if(wpr.GetName() != wp.GetName())
-                    vsNames.Add(wResult.GetName());
+                	//vsNames.Add(wResult.GetName());
+                	//--- Yuki 5/31/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+                    vsNames.Add("[" + wpr.GetName() + "]" + wResult.GetName());
+                    //---END APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
             }
         }
     }
