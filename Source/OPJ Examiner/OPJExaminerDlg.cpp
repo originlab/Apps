@@ -4,6 +4,28 @@
 
 //--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 #include <operation.h>
+static bool check_op_diff_book_then_add(uint uID, WorksheetPage& wp, vector<string>& vsNames)
+{
+   Operation &op = (Operation &)Project.GetOperationObject(uID);
+	if(op)
+	{
+		DataRange dr;
+		Worksheet wResult;
+		if(op_get_output(op, dr, wResult))
+		{
+			WorksheetPage wpr = wResult.GetPage();
+			if(wpr.GetName() != wp.GetName())
+			{
+				string strRange;
+				wResult.GetRangeString(strRange, NTYPE_LAYER_NO_EXCLAMATION);
+				vsNames.Add(strRange);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+	
 static int find_result_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNames)
 {
     WorksheetPage wp = wks.GetPage();
@@ -14,23 +36,8 @@ static int find_result_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNam
         return false;
     vsNames.SetSize(0);
     for(int ii = 0; ii < unOpIDs.GetSize(); ii++)
-    {
-        Operation &op = (Operation &)Project.GetOperationObject(unOpIDs[ii]);
-        if(op)
-        {
-            DataRange dr;
-            Worksheet wResult;
-            if(op_get_output(op, dr, wResult))
-            {
-                WorksheetPage wpr = wResult.GetPage();
-                if(wpr.GetName() != wp.GetName())
-                	//vsNames.Add(wResult.GetName());
-                	//--- Yuki 5/31/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
-                    vsNames.Add("[" + wpr.GetName() + "]" + wResult.GetName());
-                    //---END APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
-            }
-        }
-    }
+    	check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames);
+    
     return vsNames.GetSize();
 }
 static int find_dependent_analysis_output_books(Page& pg)
@@ -44,6 +51,45 @@ static int find_dependent_analysis_output_books(Page& pg)
 	}
 		
 	return nn;
+}
+//---CPY 5/31/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
+static int find_input_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNames)
+{
+    WorksheetPage wp = wks.GetPage();
+    if(!wp)
+        return false;
+    vector<uint> unOpIDs;
+    if(wks.FindIncomingOperations(unOpIDs) <= 0)
+        return false;
+    vsNames.SetSize(0);
+    for(int ii = 0; ii < unOpIDs.GetSize(); ii++)
+    	check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames);
+    
+    return vsNames.GetSize();
+}
+static int find_dependent_analysis_input_books(Page& pg)
+{
+	int nn = 0;
+	vector<string> vsNames;
+	foreach(Layer sheet in pg.Layers)
+	{
+		Datasheet wks = sheet;
+		nn += find_input_sheets_in_diff_book(wks, vsNames);
+	}
+		
+	return nn;
+}
+// find all operations using data in the given book as input
+static int find_operations(Page& pg, vector<uint>& unOpIDs)
+{
+	foreach(Layer sheet in pg.Layers)
+	{
+		Datasheet wks = sheet;
+		vector<uint> uTemp;
+		wks.FindOutgoingOperations(uTemp);
+		unOpIDs.Append(uTemp);
+	}
+	return unOpIDs.GetSize();
 }
 //--- end FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 
@@ -492,6 +538,7 @@ private:
 				//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 				Page pgBook = pg;
 				nn += find_dependent_analysis_output_books(pgBook);
+				nn += find_dependent_analysis_input_books(pgBook);//---CPY 5/31/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
 				if(bIndependentMode)
 				{
 					if(nn == 0)
