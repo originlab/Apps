@@ -463,6 +463,9 @@ function newTab2Table(RowsNum)
                 "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
                 "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                //---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
+                "<th>Operations <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+                //--- END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
                 "<th><input type=\"checkbox\" id=\"checkbox0\"></th>" + //<label for=\"checkbox0\">Delete</label></th>" + 
                 "</tr>" +
                 "</thead>" +
@@ -475,6 +478,9 @@ function newTab2Table(RowsNum)
             data += "<td></td>"; // Column for long Name
             data += "<td></td>"; // Column for project path
             data += "<td></td>"; // Column for size
+            //---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
+            data += "<td></td>"; // Column for operation
+            //--- END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
             data += "<td><input type=\"checkbox\" name=\"checkbox\" id=\"checkbox" + i + "\"></td>"; // Column for delete checkbox
             data += "</tr>";   
         } 
@@ -494,6 +500,9 @@ function showTab2OneRow(stringOutput, RowIndex)
     table.rows[RowIndex].cells[2].innerHTML = JsonOutput.LN;
     table.rows[RowIndex].cells[3].innerHTML = JsonOutput.Path;
     table.rows[RowIndex].cells[4].innerHTML = JsonOutput.Size;
+    //---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
+    table.rows[RowIndex].cells[5].innerHTML = JsonOutput.OP;
+    //---END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
 } 
 
 // This is the function used to delete 

@@ -4,27 +4,57 @@
 
 //--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 #include <operation.h>
-static bool check_op_diff_book_then_add(uint uID, WorksheetPage& wp, vector<string>& vsNames)
+//---Yuki 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
+//static bool check_op_diff_book_then_add(uint uID, WorksheetPage& wp, vector<string>& vsNames)
+static bool check_op_diff_book_then_add(uint uID, WorksheetPage& wp, vector<string>& vsNames, bool bMode)//bMode=1 is input sheet
 {
    Operation &op = (Operation &)Project.GetOperationObject(uID);
 	if(op)
 	{
 		DataRange dr;
 		Worksheet wResult;
-		if(op_get_output(op, dr, wResult))
+		//if(op_get_output(op, dr, wResult))
+		//{
+			//WorksheetPage wpr = wResult.GetPage();
+			//if(wpr.GetName() != wp.GetName())
+			//{
+				//string strRange;
+				//wResult.GetRangeString(strRange, NTYPE_LAYER_NO_EXCLAMATION);
+				//vsNames.Add(strRange);
+				//return true;
+			//}
+		//}
+		if(bMode)
 		{
-			WorksheetPage wpr = wResult.GetPage();
-			if(wpr.GetName() != wp.GetName())
+			if(op_get_input(op, dr, wResult, 0))
+			{        
+				return check_sheet_diff_book_then_add(wp, wResult, vsNames);
+			}
+		}
+		else
+		{
+			if(op_get_output(op, dr, wResult))
 			{
-				string strRange;
-				wResult.GetRangeString(strRange, NTYPE_LAYER_NO_EXCLAMATION);
-				vsNames.Add(strRange);
-				return true;
+				return check_sheet_diff_book_then_add(wp, wResult, vsNames);
 			}
 		}
 	}
 	return false;
 }
+
+static bool check_sheet_diff_book_then_add(WorksheetPage& wp, Worksheet& wResult, vector<string>& vsNames)
+{
+	WorksheetPage wpr = wResult.GetPage();
+	if(wpr.GetName() != wp.GetName())
+	{
+		string strRange;
+		wResult.GetRangeString(strRange, NTYPE_LAYER_NO_EXCLAMATION);
+		vsNames.Add(strRange);
+		return true;
+	}
+	return false;
+}
+//--- END 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
 	
 static int find_result_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNames)
 {
@@ -36,10 +66,13 @@ static int find_result_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNam
         return false;
     vsNames.SetSize(0);
     for(int ii = 0; ii < unOpIDs.GetSize(); ii++)
-    	check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames);
+    	//---Yuki 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
+    	//check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames);
+    	check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames,0);
     
     return vsNames.GetSize();
 }
+
 static int find_dependent_analysis_output_books(Page& pg)
 {
 	int nn = 0;
@@ -52,6 +85,7 @@ static int find_dependent_analysis_output_books(Page& pg)
 		
 	return nn;
 }
+
 //---CPY 5/31/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
 static int find_input_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNames)
 {
@@ -63,10 +97,13 @@ static int find_input_sheets_in_diff_book(Datasheet& wks, vector<string>& vsName
         return false;
     vsNames.SetSize(0);
     for(int ii = 0; ii < unOpIDs.GetSize(); ii++)
-    	check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames);
+    	//---Yuki 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
+    	//check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames);	
+    	check_op_diff_book_then_add(unOpIDs[ii], wp, vsNames,1);
     
     return vsNames.GetSize();
 }
+
 static int find_dependent_analysis_input_books(Page& pg)
 {
 	int nn = 0;
@@ -79,6 +116,9 @@ static int find_dependent_analysis_input_books(Page& pg)
 		
 	return nn;
 }
+//--- end FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+
+
 // find all operations using data in the given book as input
 static int find_operations(Page& pg, vector<uint>& unOpIDs)
 {
@@ -91,7 +131,7 @@ static int find_operations(Page& pg, vector<uint>& unOpIDs)
 	}
 	return unOpIDs.GetSize();
 }
-//--- end FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+
 
 //---- LabTalk Access
 class OPJExaminerDlg;
@@ -114,6 +154,9 @@ struct stOneBook
 	string Path;
 	string Size;
 	int Num;
+	//---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
+	int OP;
+	//---END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
 };
 
 struct stOneGraph
@@ -405,9 +448,9 @@ private:
 	string GetOneObjectDependents(OriginObject obj)
 	{
 		FindDependentHelper _dep;
-		int nn,mm;
+		int nn;
 		string strDependents;
-		vector<string> vsGraph, vsSheet;
+		vector<string> vsGraph; 
 		stOneObjectDependents stOneResult;
 		
 		
@@ -425,7 +468,15 @@ private:
 		dts = obj;
 		if(dts)
 		{
-			mm = find_result_sheets_in_diff_book(dts, vsSheet);
+			//mm = find_result_sheets_in_diff_book(dts, vsSheet);
+			//---Yuki 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
+			int mm;
+			vector<string> vsResultSheet, vsInputSheet, vsSheet;
+			mm = find_result_sheets_in_diff_book(dts, vsResultSheet);
+			mm += find_input_sheets_in_diff_book(dts, vsInputSheet);
+			vsSheet.Append(vsResultSheet);
+			vsSheet.Append(vsInputSheet);
+			//END APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
 			for(ii = 0; ii < vsSheet.GetSize(); ii++)
 			{
 				strDependents += vsSheet[ii] + " "; 
@@ -592,8 +643,18 @@ private:
 			//--- Yuki 5/31/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 			int mm;
 			mm += find_dependent_analysis_output_books(pg);
+			//---Yuki 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
+			mm += find_dependent_analysis_input_books(pg);
+			//---END APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
 			stOneResult.Num = vs.GetSize() + mm;
 			//--- END FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
+		}
+		else
+		{
+			//---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
+			vector<uint> unOpIDs;
+			stOneResult.OP = find_operations(pg, unOpIDs);
+			//---END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
 		}
 		
 		string strOneIndependent;
