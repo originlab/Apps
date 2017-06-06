@@ -238,9 +238,9 @@ window.onload = function(){
     //***************
     // This fucntion will be triggered by clicking Delete button
     // When click Delete button in Tab2.
-    var delete2 = document.getElementById("tab2Delete");
-     delete2.addEventListener("click", function(){
-        deleteBooks();
+    var delete2 = document.getElementById("tab2YesDelete");
+    delete2.addEventListener("click", function(){
+        deleteBooks();      
      });
     //***************
     
@@ -404,6 +404,7 @@ function constructGraphPreview(graphName)
     var graphPreview = "<div class=\"graphpreview\">";
     //This is the function to call OC to append the paths of graph preview                             
     var strGraphPath = window.external.ExtCall("ShowGraphPreview", graphName); 
+    var graphPath; 
     //-----Yuki 2017-05-23 APPS_280-P1 FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL
     //var JsonOutput = JSON.parse(strGraphPath);//Parse string to Json
     //END FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL   
@@ -411,14 +412,17 @@ function constructGraphPreview(graphName)
     {
         document.getElementById("msg").className = "text-danger";
         document.getElementById("msg").innerHTML = "Failed to get preview!"; 
-        return null;
+        //---Yuki 06/06/2017 APPS_280-P6 ADD_HINT_IN_PREVIEW_FOR_EMBEDDED_GRAPHS
+        //return null;
+        graphPath = "<p class=\"text-danger\"> Cannot view graph since it is an embedded graph!</p>";
+        //---END APPS_280-P6 ADD_HINT_IN_PREVIEW_FOR_EMBEDDED_GRAPHS
     }
     else
     {
         //-----Yuki 2017-05-23 APPS_280-P1 FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL
         var JsonOutput = JSON.parse(strGraphPath);//Parse string to Json
         //END FIX_ERROR_MESSAGE_WHILE_GRAPH_PATH_IS_NULL
-        var graphPath = "<img name=\"" +
+        graphPath = "<img name=\"" +
                     JsonOutput.Name +
                     "\" src=\"" + 
                     JsonOutput.Path + 
@@ -435,9 +439,9 @@ function constructGraphPreview(graphName)
         //     }
         // }); 
         //--- END FIX_ACTIVATE_GRAPH_PAGE_CALLED_REPEATEDLY                       
-        graphPreview += graphPath + "</div>";  
-        return graphPreview;
     }
+    graphPreview += graphPath + "</div>";  
+    return graphPreview;
 }
 
 // This is the function used to generate 

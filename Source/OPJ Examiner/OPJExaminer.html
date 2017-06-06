@@ -24,17 +24,15 @@
                 <ul class="nav nav-tabs" role="tablist"> 
                     <!--Yuki 2017-05-19 APPS_280-S3 LABEL CHANGES AND TOOLTIPS-->
                     <li role="presentation" class="active">
-                        <!--Yuki 2017-05-26 APPS_280-S3 IMPROVE_TOOLTIPS-->
-                        <a href="#tab-2" class="white-tooltip" data-toggle="tab" title="Find books without any data plotted in graphs">Independent Books</a>
+                        <a href="#tab-2" class="white-tooltip" data-toggle="tab" title="Find books without any data plotted in graphs or used in analysis">Independent Books</a>
                     </li>
                     
                     <li role="presentation">
-                        <a href="#tab-3" class="white-tooltip" data-toggle="tab" title="Find books with data plotted in graphs">Dependent Books</a>
+                        <a href="#tab-3" class="white-tooltip" data-toggle="tab" title="Find books with data plotted in graphs or used in analysis">Dependent Books</a>
                     </li>
 
                     <li role="presentation">
-                        <a href="#tab-1" class="white-tooltip" data-toggle="tab" title="Find graphs using data in active book">Dependents Browser</a>
-                        <!--END_IMPROVE_TOOLTIPS-->
+                        <a href="#tab-1" class="white-tooltip" data-toggle="tab" title="Find graphs or sheets using data in active book">Dependents Browser</a>
                     </li>
                     <!--End LABEL CHANGES AND TOOLTIPS-->
                 </ul>
@@ -99,7 +97,7 @@
                                                     <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                                                     <span>Find/Update</span>
                                                 </button>
-                                                <button id="tab2Delete" type="button" class="btn btn-default" disabled>
+                                                <button id="tab2Delete" type="button" class="btn btn-default" data-toggle="modal" data-target="#YesCancelDialog"disabled>
                                                     <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                                                     <span>Delete</span>
                                                 </button>
@@ -107,6 +105,26 @@
                                         </div>
                                     </div>
                                 </div>
+                                <!--Yuki APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS-->
+                                <!--Modal confirmation dialog-->
+                                <div class="modal fade" id="YesCancelDialog" tabindex="-1" role="dialog">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                                <h4 class="modal-title">Warnning</h4>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="text-danger">Are you sure you want to delete this? This action cannot be undone.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button id="tab2YesDelete" type="button" class="btn btn-default" data-dismiss="modal">Yes</button>
+                                                <button id="tab2CancelDelete" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--END APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS -->
                             </div>
                         </div>
                         <!--tab2 table-->
