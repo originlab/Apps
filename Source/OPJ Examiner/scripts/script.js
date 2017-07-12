@@ -13,6 +13,33 @@ window.onload = function(){
     //End LABEL CHANGES AND TOOLTIPS 
     //***************
     
+    //-----Yuki 7/12/2017 APPS_280-P4 ADD DATASIZE PARSER
+    $.tablesorter.addParser({
+        id: "datasize",
+        is: function(s) {
+            return s.match(new RegExp(/[0-9]+(\.[0-9]+)?\ (KB|B|GB|MB|TB)/));
+        },
+        format: function(s) {
+            var suf = s.match(new RegExp(/(KB|B|GB|MB|TB)$/))[1];
+            var num = parseFloat( s.match(new RegExp(/^[0-9]+(\.[0-9]+)?/))[0]);
+
+            switch( suf ) {
+                case 'B':
+                    return num;
+                case 'KB':
+                    return num * 1024;
+                case 'MB':
+                    return num * 1024 * 1024;
+                case 'GB':
+                    return num * 1024 * 1024 * 1024;
+                case 'TB':
+                    return num * 1024 * 1024 * 1024 * 1024;
+            }
+        },
+        type: "numeric" 
+    });
+    //END ADD DATASIZE PARSER  
+     
     // This fucntion will be triggered by clicking Check button
     var check1 = document.getElementById("tab1Check");
     // When click Check button in Tab1.
@@ -50,7 +77,7 @@ window.onload = function(){
                 var graphPreview = constructGraphPreview(graphName); 
                 var enterTimer, leaveTimer;
                 
-                //Initialize popover
+                //Initialize popover               
                 $anchor.popover({ 
                     container: "#tab-1",   
                     html: "true",
@@ -58,7 +85,6 @@ window.onload = function(){
                     trigger: "manual",
                     title: "Graph Preview",
                     content: graphPreview,
-                    // viewport: "#tab-1"
                 })
                 .on("mouseover", function (){
                         if(enterTimer)
@@ -74,7 +100,7 @@ window.onload = function(){
                         $("[data-toggle='popover']").not($anchor).popover("hide");
                         
                         //Start new timeout to show popover
-                        enterTimer = setTimeout(function(){
+                        enterTimer = setTimeout(function(){    
                             $anchor.popover("show");
                             document.getElementById("msg").className = "text-success";
                             document.getElementById("msg").innerHTML =  "Double click on the preview to activate the graph window."; 
@@ -115,7 +141,7 @@ window.onload = function(){
                                 document.getElementById("msg").innerHTML =  "Hover on the graph name to show its graph preview.";   
                             }
                         },100);
-                });                         
+                });                        
             }); 
         }
     });
@@ -169,7 +195,13 @@ window.onload = function(){
             document.getElementById("msg").innerHTML = "Double click on any row to activate the book."; 
             //4. Enable to sort table by clicking table header
             $(function(){
-            $("#tb2").tablesorter();
+                $("#tb2").tablesorter({
+                    //-----Yuki 7/12/2017 APPS_280-P4 ADD DATASIZE PARSER
+                    headers:{
+                        4:{sorter: "datasize"}    
+                    }
+                    //---END APPS_280-P4 ADD DATASIZE PARSER
+                });
             });        
             //5. Enable to check/uncheck DeleteAll checkbox to check/uncheck all the checkboxes
             var deletecheck = document.getElementById("checkbox0");
@@ -292,7 +324,13 @@ window.onload = function(){
             document.getElementById("msg").innerHTML = "Double click on any row to activate the book!"; 
             //4. Enable to sort table by clicking table header
             $(function(){
-            $("#tb3").tablesorter();
+                $("#tb3").tablesorter({
+                    //-----Yuki 7/12/2017 APPS_280-P4 ADD DATASIZE PARSER
+                    headers:{
+                        4:{sorter: "datasize"}    
+                    }
+                    //END APPS_280-P4 ADD DATASIZE PARSER
+                });
             });        
            
             //5. Enable to select every row in table
