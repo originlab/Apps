@@ -6,7 +6,7 @@ window.onload = function(){
     $("[data-toggle='tab']").tooltip({
         animate: true,
         container: "body",
-        delay: { "show": 1000},
+        delay: {"show": 1000},
         placement: "right",
         trigger: "hover",        
     });   
@@ -182,7 +182,7 @@ window.onload = function(){
             clearInterval(Timer);
             //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-danger";
-            document.getElementById("msg").innerHTML = "There are no independent book in this project."; 
+            document.getElementById("msg").innerHTML = "There is no independent book in this project."; 
             document.getElementById("table2").style.display = "none";
             return;
         }
@@ -269,9 +269,9 @@ window.onload = function(){
     
     //***************
     // This fucntion will be triggered by clicking Delete button
-    // When click Delete button in Tab2.
-    var delete2 = document.getElementById("tab2YesDelete");
-    delete2.addEventListener("click", function(){
+    // When click Delete button in Tab2 and Tab4.
+    var delete2_4 = document.getElementById("YesDelete");
+    delete2_4.addEventListener("click", function(){
         deleteBooks();      
      });
     //***************
@@ -363,6 +363,142 @@ window.onload = function(){
         }
             
     });
+    
+    //Yuki 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+    //***************
+    // This fucntion will be triggered by clicking Find button
+    var find4 = document.getElementById("tab4Find");
+    // When click Find button in Tab4.
+    find4.addEventListener("click",function(){
+        //1.Clean and prepare section for new update 
+        document.getElementById("section1").style.display = "none";
+        $("#tab4Delete").attr('disabled', 'disabled');
+        //2.Show indication when scanning
+        var startTime = new Date;
+        Timer = setInterval(function() {
+            document.getElementById("msg").className = "text-success";
+            document.getElementById("msg").innerHTML = "Finding / Updating... (" + Math.floor((new Date - startTime)/1000) + " Seconds)"; 
+        }, 1000);
+        //3.Find matched books
+        var findStatus = window.external.ExtCall("GetMatchedBookInfo"); 
+        //4.Show message in box
+        if(findStatus < 0)
+        {
+            clearInterval(Timer);
+            document.getElementById("msg").className = "text-danger";
+            document.getElementById("msg").innerHTML = "Error!"; 
+            document.getElementById("section1").style.display = "none";
+            return;
+        }
+        else if(findStatus == 0)
+        {
+            clearInterval(Timer);
+            document.getElementById("msg").className = "text-danger";
+            document.getElementById("msg").innerHTML = "There is no matched book in this project."; 
+            document.getElementById("section1").style.display = "none";
+            return;
+        }
+        else
+        {
+            clearInterval(Timer);
+            document.getElementById("msg").className = "text-success";
+            document.getElementById("msg").innerHTML = "Double click on any row to activate the book."; 
+            //5. Enable to sort table by clicking table header
+            $(function(){
+                $(".table").tablesorter({
+                    headers:{
+                        4:{sorter: "datasize"}    
+                    }
+                });
+                //6. Tooltip to show the info of group  
+                $(".panel-title a").each(function(){   
+                    var $anchor = $(this);   
+                    var temp = $(this).text().split( "#" );
+                    var sectionIndex = temp[1] - 1; 
+                    var groupPath = window.external.ExtCall("GetMatchedBookGroupInfo", sectionIndex);
+                    
+                    //Initialize popover               
+                    $anchor.tooltip({
+                        animate: true,
+                        container: "body",  
+                        delay:{"show": 500},
+                        html: true,
+                        placement:"bottom",
+                        trigger: "hover",
+                        title: "<p style=\"font-weight:bold;\">The same imported file:</p><p>" + groupPath + "</p>",
+                    });
+                }); 
+            });
+            
+            //7. Enable to check/uncheck DeleteAll checkbox to check/uncheck all the checkboxes of this table
+            $(".checkbox0").each(function(){
+                var $anchor = $(this);
+                $anchor.on("click",function(){
+                    var $parentTableCheckboxes = $(this).parents("table").children("tbody").find(":checkbox");
+                    if($(this).is(":checked"))
+                    {
+                        $parentTableCheckboxes.each(function() {
+                            this.checked = true;                        
+                        });
+                    }
+                    else
+                    {
+                        $parentTableCheckboxes.each(function() {
+                            this.checked = false;                        
+                        });
+                    }
+                });
+            });
+            
+            //8. Disable or enable Delete button
+            $(":checkbox").each(function(){
+                $(this).click(function(){
+                    var checklength = $("#sec1 tbody input:checked").length;
+                    if(checklength >0)
+                    {
+                        $("#tab4Delete").removeAttr("disabled");
+                    }
+                    else
+                    {
+                        $("#tab4Delete").attr("disabled", "disabled");
+                    }   
+                })
+            });
+            
+            //9. Enable to select every row in table
+            var tableList = document.getElementsByTagName("table");
+            for(i = 0; i < tableList.length; i++)
+            {
+                var table = tableList[i];
+                var rows = table.getElementsByTagName("tr");
+                for (j = 1; j < rows.length; j++) 
+                {
+                    var currentRow = table.rows[j];
+                    var createClickHandler = 
+                        function(row) 
+                        {
+                            //10. Double click any row in table to activate its corresponding workbook
+                            return function() {  
+                                                var cell = row.getElementsByTagName("td")[1];
+                                                var bookName = cell.innerHTML;
+                                                if(window.external.ExtCall("ActivePage", bookName))
+                                                {
+                                                    document.getElementById("msg").className = "text-success";
+                                                    document.getElementById("msg").innerHTML = bookName + " is already active."; 
+                                                }
+                                                else
+                                                {
+                                                    document.getElementById("msg").className = "text-success";
+                                                    document.getElementById("msg").innerHTML = "Failed to active " + bookName + "."; 
+                                                }
+                                            };
+                        };
+                    currentRow.ondblclick = createClickHandler(currentRow);
+                }
+            }
+        }
+    });
+    //END APPS-68-S3-NEW_MATCHED_BOOK_TAB
 };
 
 // This is the function used to generate 
@@ -552,20 +688,27 @@ function showTab2OneRow(stringOutput, RowIndex)
 function deleteBooks()
 {
     var deleteRowNum = 0;
-    $("#tb2 tbody input:checked").parents("tr").find("td:nth-child(2)").each(function() {
-        if(window.external.ExtCall("DeletePage", this.innerHTML) == 0)
-        {
-            document.getElementById("msg").className = "text-danger";
-            document.getElementById("msg").innerHTML = "Failed to delete " + bookName + "."; 
-            return;
-        }
-        deleteRowNum++;
+    //Yuki 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+    $(".table").each(function(){
+        var $anchor = $(this);
+        $(this).find("tbody input:checked").parents("tr").find("td:nth-child(2)").each(function() {
+    //END 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+            if(window.external.ExtCall("DeletePage", this.innerHTML) == 0)
+            {
+                document.getElementById("msg").className = "text-danger";
+                document.getElementById("msg").innerHTML = "Failed to delete " + this.innerHTML + "."; 
+                return;
+            }
+            deleteRowNum++;
+        });
+        //Yuki 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+        $(this).find("tbody input:checked").parents("tr").remove();
+        $anchor.trigger("update");
+        //END 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+        document.getElementById("msg").className = "text-success";
+        document.getElementById("msg").innerHTML = "Delete " + deleteRowNum + " books."; 
+        $(".deletebutton").attr('disabled', 'disabled');
     });
-    
-    $("#tb2 tbody input:checked").parents("tr").remove();
-    $("#tb2").trigger("update");
-    document.getElementById("msg").className = "text-success";
-    document.getElementById("msg").innerHTML = "Delete " + deleteRowNum + " books."; 
 }
 
 // This is the function used to generate 
@@ -624,3 +767,77 @@ function showTab3OneRow(stringOutput, RowIndex)
     table.rows[RowIndex].cells[4].innerHTML = JsonOutput.Size;
     table.rows[RowIndex].cells[5].innerHTML = JsonOutput.Num;
 } 
+
+//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+function newCollapsePanel()
+{
+    var data = "";
+    data += "<div class=\"panel-group\" id=\"sec1\">";
+            "</div>";
+    document.getElementById("section1").style.display = "block";   
+    document.getElementById("section1").innerHTML = data;   
+}
+
+function newSection(sectionIndex, RowsNum)
+{
+    var data = "";
+    data += "<div class=\"panel panel-default\">";
+    data += "<div class=\"panel-heading\">" +
+            "<h5 class=\"panel-title\">" + 
+            "<a data-toggle=\"collapse\" data-parent=\"#sec1\" href=\"#collapse" + sectionIndex + "\">" +
+            "Found #" + sectionIndex +
+            "</a>" +
+            "</h5>" +
+            "</div>"; 
+    //Expand the first section and collapse the other sections
+    if(sectionIndex == 1) 
+    {
+        data += "<div id=\"collapse" + sectionIndex + "\" class=\"panel-collapse collapse in\">";
+    }
+    else
+    {
+        data += "<div id=\"collapse" + sectionIndex + "\" class=\"panel-collapse collapse\">";    
+    }
+    data += "<div class=\"panel-body\">" +
+            "<table id=\"section" + sectionIndex + "tb\" class=\"table table-condensed table-hover\">";  
+    data += "<thead>" +
+            "<tr>" +
+            "<th>#<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th>Book<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th>Number of Imported File <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th><input type=\"checkbox\" class=\"checkbox0\"></th>" + 
+            "</tr>" +
+            "</thead>" +
+            "<tbody>";                      
+    for (var i = 1; i <= RowsNum; i++) // Set the body for table
+    {   
+        data += "<tr>";  
+        data += "<td>" + i + "</td>"; // Column for number
+        data += "<td></td>"; // Column for short Name
+        data += "<td></td>"; // Column for long Name
+        data += "<td></td>"; // Column for project path
+        data += "<td></td>"; // Column for size
+        data += "<td></td>"; // Column for the number of imported file
+        data += "<td><input type=\"checkbox\" name=\"checkbox\" id=\"checkbox" + i + "\"></td>"; // Column for delete checkbox
+        data += "</tr>";   
+    } 
+    data += "</tbody>" +
+            "</table>" +
+            "</div></div></div>";      
+    $("#sec1").append(data);   
+}
+
+function showTab4OneRow(stringOutput, RowIndex, sectionIndex)
+{
+    var JsonOutput = JSON.parse(stringOutput);//Parse string to Json
+    var table = document.getElementById("section" + sectionIndex + "tb");
+    table.rows[RowIndex].cells[1].innerHTML = JsonOutput.SN;
+    table.rows[RowIndex].cells[2].innerHTML = JsonOutput.LN;
+    table.rows[RowIndex].cells[3].innerHTML = JsonOutput.Path;
+    table.rows[RowIndex].cells[4].innerHTML = JsonOutput.Size;
+    table.rows[RowIndex].cells[5].innerHTML = JsonOutput.ImportedFileNum;
+}
+//END APPS-68-S3-NEW_MATCHED_BOOK_TAB

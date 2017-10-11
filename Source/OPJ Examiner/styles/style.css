@@ -62,6 +62,16 @@ body {
   overflow-y: auto;
 }
 
+/*Yuki 10/10/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB*/
+.panel-section{
+  position: absolute;
+  top: 25rem;
+  bottom: 11%;
+  width: 98%;
+  overflow-y: auto;
+}
+/*END APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS*/
+ 
 .table-responsive{
   padding: 0% 0% 2% 0%;
 }
@@ -83,5 +93,19 @@ a:hover{
     background-color: white;
     color: #333;
     border: solid 1px #333;
+}
+.tooltip.bottom .tooltip-inner {
+    background-color: #D0E2F2;
+    color: #333;
+    border: solid 1px #D0E2F2;
+    text-align: left;
+    margin-left: 1rem;
+}
+.tooltip.bottom .tooltip-arrow {
+    top: 0;
+    left: 50%;
+    margin-left: -1rem;
+    border-bottom-color: #D0E2F2; 
+    border-width: 0 1rem 1rem;
 }
 /*END LABEL CHANGES AND TOOLTIPS*/

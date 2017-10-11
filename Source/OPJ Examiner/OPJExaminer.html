@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- saved from url=(0014)about:internet -->
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -24,16 +25,24 @@
                 <ul class="nav nav-tabs" role="tablist"> 
                     <!--Yuki 2017-05-19 APPS_280-S3 LABEL CHANGES AND TOOLTIPS-->
                     <li role="presentation" class="active">
-                        <a href="#tab-2" class="white-tooltip" data-toggle="tab" title="Find books without any data plotted in graphs or used in analysis">Independent Books</a>
+                        <a href="#tab-2" data-toggle="tab" title="Find books without any data plotted in graphs or used in analysis">Independent Books</a>
                     </li>
                     
                     <li role="presentation">
-                        <a href="#tab-3" class="white-tooltip" data-toggle="tab" title="Find books with data plotted in graphs or used in analysis">Dependent Books</a>
+                        <a href="#tab-3" data-toggle="tab" title="Find books with data plotted in graphs or used in analysis">Dependent Books</a>
                     </li>
 
                     <li role="presentation">
-                        <a href="#tab-1" class="white-tooltip" data-toggle="tab" title="Find graphs or sheets using data in active book">Dependents Browser</a>
+                        <a href="#tab-1" data-toggle="tab" title="Find graphs or sheets using data in active book">Dependents Browser</a>
                     </li>
+                    
+                    <!--Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB-->
+                    <li role="presentation">
+                        <a href="#tab-4" data-toggle="tab" title="Find books that have a same imported file or the same data structure">Matched Books</a>
+                        <!--<a href="#tab-4" class="white-tooltip" data-toggle="tab" title="Find books that have a same imported file or the same data structure">Matched Books</a>-->
+                    </li>
+                    <!--END APPS-68-S3-NEW_MATCHED_BOOK_TAB-->
+                    
                     <!--End LABEL CHANGES AND TOOLTIPS-->
                 </ul>
                 <!--tab body-->
@@ -97,7 +106,7 @@
                                                     <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                                                     <span>Find/Update</span>
                                                 </button>
-                                                <button id="tab2Delete" type="button" class="btn btn-default" data-toggle="modal" data-target="#YesCancelDialog"disabled>
+                                                <button id="tab2Delete" type="button" class="btn btn-default deletebutton" data-toggle="modal" data-target="#YesCancelDialog"disabled>
                                                     <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                                                     <span>Delete</span>
                                                 </button>
@@ -105,26 +114,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!--Yuki APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS-->
-                                <!--Modal confirmation dialog-->
-                                <div class="modal fade" id="YesCancelDialog" tabindex="-1" role="dialog">
-                                    <div class="modal-dialog" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                                <h4 class="modal-title">Warnning</h4>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p class="text-danger">Are you sure you want to delete this? This action cannot be undone.</p>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button id="tab2YesDelete" type="button" class="btn btn-default" data-dismiss="modal">Yes</button>
-                                                <button id="tab2CancelDelete" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!--END APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS -->
                             </div>
                         </div>
                         <!--tab2 table-->
@@ -149,8 +138,82 @@
                         <!--tab3 table-->
                         <div class="panel-table2" id="table3" style="display: none" mce_style="display: none"></div>                
                     </div>
+                    
+                    <!--Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB-->
+                    <!--tab4-Matched Books-->
+                    <div id="tab-4" class="tab-pane fade">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <!--tab1 radio group-->
+                                <table>
+                                    <tr>
+                                        <td>
+                                            <input type="radio" name="matchingmode" value="file" checked>
+                                            <label for="file">
+                                                Have a same imported file <small class="text-muted">()</small>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>                            
+                                            <input type="radio" name="matchingmode" value="structure" disabled>
+                                            <label for="structure">
+                                                Have the same data structure <small class="text-muted">()</small>
+                                            </label>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="container">
+                                                <div class="row">
+                                                    <div class="col-md-6 col-sm-6 col-xs-10">
+                                                        <div class="btn-group btn-group-justified">
+                                                            <button id="tab4Find" type="button" class="btn btn-default">
+                                                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                                                                <span>Find/Update</span>
+                                                            </button>
+                                                            <button id="tab4Delete" type="button" class="btn btn-default deletebutton" data-toggle="modal" data-target="#YesCancelDialog"disabled>
+                                                                <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                                                <span>Delete</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table> 
+                            </div>
+                        </div>
+                        <!--tab1 table-->
+                        <div class="panel-section" id="section1" style="display: none" mce_style="display: none"></div>
+                    </div>
+                    <!--END 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB-->
+                    
                 </div>
             </div>        
+            
+            <!--Yuki APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS-->
+            <!--Modal confirmation dialog-->
+            <div class="modal fade" id="YesCancelDialog" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title">Warning</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p class="text-danger">Are you sure you want to delete this? This action cannot be undone.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="YesDelete" type="button" class="btn btn-default" data-dismiss="modal">Yes</button>
+                            <button id="CancelDelete" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--END APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS -->
+            
         </div>
     
         <footer class="footer">
@@ -161,7 +224,7 @@
         
         <!-- Placed at the end of the document so the pages load faster -->
         <script src="dist/jquery.min.js"></script>
-        <script src="dist/js/bootstrap.js"></script> 
+        <script src="dist/js/bootstrap.js"></script>
         <script src="scripts/script.js"></script> 
         <script type="text/javascript" src="dist/jquery.tablesorter.min.js"></script>
     </body>

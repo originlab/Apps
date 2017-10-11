@@ -157,6 +157,9 @@ struct stOneBook
 	//---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
 	int OP;
 	//---END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
+	//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+	int ImportedFileNum;
+	//END 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
 };
 
 struct stOneGraph
@@ -183,7 +186,7 @@ public:
 		InitMsgMap();
 		int nRet = HTMLDlg::Create(hParent);
 		ModifyStyle(0, WS_MAXIMIZEBOX);
-		//ModifyStyle(WS_THICKFRAME, 0); // Remove sizing border.
+		ModifyStyle(0, WS_MINIMIZEBOX);
 		
 		//-----Yuki 2017-05-17 APPS_280-S1 CHANGE_TO_USE_SYS_VAR_FOR_DPI
 		okutil_sys_values("BDPI", &m_sysValBDPI);//Remember current into dialog variable
@@ -194,6 +197,18 @@ public:
 		return nRet;
 	}
 protected:
+	//-----Yuki 2017-10-11 SHOW_ICON_ON_THE_TITLE_BAR
+	BOOL OnInitDialog()
+	{
+		HTMLDlg::OnInitDialog(); // Call base class.
+
+		string strIconPath = __FILE__;
+		strIconPath = GetFilePath(strIconPath) + "AppIcon.ico";
+		set_window_icon_from_file(GetSafeHwnd(), strIconPath);
+		return TRUE
+	}
+	//-----END 2017-10-11 SHOW_ICON_ON_THE_TITLE_BAR
+	
 	BOOL OnDestroy()
 	{
 		HTMLDlg::OnDestroy();
@@ -205,7 +220,7 @@ protected:
 	}
 	BOOL GetDlgInitSize(int& width, int& height) // when the dialog is ready, need to init the size and position of dialog
 	{
-		width = 723;
+		width = 800;
 		height = 531;
 		return TRUE;
 	}
@@ -229,6 +244,7 @@ public:
 	DECLARE_DISPATCH_MAP
 
 	EVENTS_BEGIN_DERIV(HTMLDlg)
+		ON_INIT(OnInitDialog)
 		ON_DESTROY(OnDestroy)
 		ON_SIZE(OnDlgResize) //Disable resize
 	EVENTS_END_DERIV
@@ -412,7 +428,65 @@ public:
 		return true;
 	}
 	
+//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+	//This method will be called from JavaScript.
+	//This function is used to get the info of the matched
+	//book and fill the sections and tables in Tab4
+	int GetMatchedBookInfo()
+	{
+		Object jsscript = m_dhtml.GetScript();
+		if(!jsscript)
+			return -1;
+		
+		vector<string> vsPathCollection, vsBookName;
+		GetAllPathsInProject(vsPathCollection, vsBookName);
+		
+		int nSectionIndex = 0;
+		for(int ii = 0; ii < vsPathCollection.GetSize(); ii++)
+		{
+			vector<string> vsSameGroupBook;
+			if(GroupBookHasASameFile(vsPathCollection[ii], vsBookName, vsSameGroupBook))
+			{
+				nSectionIndex++;
+				if(nSectionIndex == 1)
+				{
+					jsscript.newCollapsePanel()
+				}
+				int nRows = vsSameGroupBook.GetSize();
+
+				jsscript.newSection(nSectionIndex, nRows);
+				for(int jj = 0; jj < nRows; jj++)
+				{
+					Page pg(vsSameGroupBook[jj]);
+					string strOneMatchedBookInfo = GetOneBookInfo(false, pg);
+					jsscript.showTab4OneRow(strOneMatchedBookInfo, jj + 1, nSectionIndex);
+				}
+			}	
+		}
+		if(nSectionIndex == 0)
+			return 0;
+		else
+			return nSectionIndex;	
+	}
 	
+	string GetMatchedBookGroupInfo(int nSectionIndex)
+	{
+		vector<string> vsPathCollection, vsBookName, vsSamePath;
+		GetAllPathsInProject(vsPathCollection, vsBookName);
+		
+		for(int ii = 0; ii < vsPathCollection.GetSize(); ii++)
+		{
+			vector<string> vsSameGroupBook;
+			if(GroupBookHasASameFile(vsPathCollection[ii], vsBookName, vsSameGroupBook))
+			{
+				vsSamePath.Add(vsPathCollection[ii]);
+			}
+		}
+		return vsSamePath[nSectionIndex];
+	}
+//END APPS-68-S3-NEW_MATCHED_BOOK_TAB
+	
+
 private:
 	// This function is used to count the worksheets/matrix sheets
 	// or columns/matrix object in active workbook or worksheet.
@@ -657,11 +731,89 @@ private:
 			//---END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
 		}
 		
+		//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+		Tree tr;
+		stOneResult.ImportedFileNum = GetImportedFileNum(pg, tr);
+		//END APPS-68-S3-NEW_MATCHED_BOOK_TAB
+		
 		string strOneIndependent;
 		JSON.ToString(stOneResult, strOneIndependent);
 		return strOneIndependent;
 	}
+
+//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+	//This function is used to get the number of the imported file
+	int GetImportedFileNum(Page pg, Tree& tr)
+	{
+		int nCount;
+		if(pg.GetBinaryStorage("Files",tr))
+		{
+			nCount = tr.GetNodeCount();
+		}
+		else
+			nCount = -1;
+		return nCount;
+	}
+		
+	//This function is used to get this imported files paths of this book
+	bool GetFilePaths(Page pg, vector<string>& vsPaths)
+	{
+		Tree tr;
+		int nImportedFileNum = GetImportedFileNum(pg,tr);
+		if(nImportedFileNum > 0)
+		{
+			foreach(TreeNode tn in tr.Children)
+			{
+				vsPaths.Add(tn.Info.FilePath.strVal);
+			}
+			return true;
+		}
+		else
+			return false;
+	}
 	
+	//This function is used to get the imported files paths of this project
+	// and all the book name of this project
+	void GetAllPathsInProject(vector<string>& vsPathCollection, vector<string>& vsBookName)
+	{
+		foreach(PageBase pg in Project.Pages)
+		{
+			if(pg.GetType() == 2 | pg.GetType() == 5)
+			{
+				vector<string> vsPaths;
+				if(GetFilePaths(pg, vsPaths))
+				{
+					vsPathCollection.Append(vsPaths);
+					vsBookName.Add(pg.GetName());
+				}
+			}
+		}
+		remove_repeat_item(vsPathCollection);
+		return;
+	}
+	
+	//This function is used to group the books that has a same imported file path
+	bool GroupBookHasASameFile(string strSamePath, vector<string>& vsBookName, vector<string>& vsSameGroupBook)
+	{
+		for(int ii = 0; ii < vsBookName.GetSize(); ii++)
+		{
+			PageBase pg(vsBookName[ii]);
+			vector<string> vsPaths;
+			if(GetFilePaths(pg, vsPaths))
+			{
+				if(vsPaths.Find(strSamePath) > -1)
+				{
+					vsSameGroupBook.Add(vsBookName[ii]);
+				}
+			}
+		}
+		if(vsSameGroupBook.GetSize() > 1)
+			return true;
+		else
+			return false;
+	}
+//END APPS-68-S3-NEW_MATCHED_BOOK_TAB
+
 private:
 	Page m_pg;
 	Worksheet m_wks;
@@ -677,6 +829,8 @@ BEGIN_DISPATCH_MAP(OPJExaminerDlg, HTMLDlg)
 	DISP_FUNCTION(OPJExaminerDlg, ActivePage, VTS_BOOL, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, DeletePage, VTS_BOOL, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, GetDependentBookInfo, VTS_I4, VTS_VOID)
+	DISP_FUNCTION(OPJExaminerDlg, GetMatchedBookInfo, VTS_I4, VTS_VOID)
+	DISP_FUNCTION(OPJExaminerDlg, GetMatchedBookGroupInfo, VTS_STR, VTS_I4)
 END_DISPATCH_MAP
 
 //---- LabTalk Access
