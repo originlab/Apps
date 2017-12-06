@@ -6,13 +6,13 @@
 #include <operation.h>
 //---Yuki 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
 //static bool check_op_diff_book_then_add(uint uID, WorksheetPage& wp, vector<string>& vsNames)
-static bool check_op_diff_book_then_add(uint uID, WorksheetPage& wp, vector<string>& vsNames, bool bMode)//bMode=1 is input sheet
+static bool check_op_diff_book_then_add(uint uID, Page& wp, vector<string>& vsNames, bool bMode)//bMode=1 is input sheet
 {
    Operation &op = (Operation &)Project.GetOperationObject(uID);
 	if(op)
 	{
 		DataRange dr;
-		Worksheet wResult;
+		Datasheet wResult;
 		//if(op_get_output(op, dr, wResult))
 		//{
 			//WorksheetPage wpr = wResult.GetPage();
@@ -42,9 +42,9 @@ static bool check_op_diff_book_then_add(uint uID, WorksheetPage& wp, vector<stri
 	return false;
 }
 
-static bool check_sheet_diff_book_then_add(WorksheetPage& wp, Worksheet& wResult, vector<string>& vsNames)
+static bool check_sheet_diff_book_then_add(Page& wp, Datasheet& wResult, vector<string>& vsNames)
 {
-	WorksheetPage wpr = wResult.GetPage();
+	Page wpr = wResult.GetPage();
 	if(wpr.GetName() != wp.GetName())
 	{
 		string strRange;
@@ -58,7 +58,7 @@ static bool check_sheet_diff_book_then_add(WorksheetPage& wp, Worksheet& wResult
 	
 static int find_result_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNames)
 {
-    WorksheetPage wp = wks.GetPage();
+    Page wp = wks.GetPage();
     if(!wp)
         return false;
     vector<uint> unOpIDs;
@@ -89,7 +89,7 @@ static int find_dependent_analysis_output_books(Page& pg)
 //---CPY 5/31/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
 static int find_input_sheets_in_diff_book(Datasheet& wks, vector<string>& vsNames)
 {
-    WorksheetPage wp = wks.GetPage();
+    Page wp = wks.GetPage();
     if(!wp)
         return false;
     vector<uint> unOpIDs;
