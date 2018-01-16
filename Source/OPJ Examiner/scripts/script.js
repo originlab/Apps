@@ -864,7 +864,6 @@ function deleteBooks()
 //Yuki 01/04/2018 APPS-68-S4-NEW_GRAPH_TAB
 function deleteGraphs(selectedImgsArr)
 {
-    alert(selectedImgsArr); 
     var graphNum = selectedImgsArr.length;
     if(0 == graphNum)
     {
