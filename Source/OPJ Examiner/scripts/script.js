@@ -266,16 +266,7 @@ window.onload = function(){
             
     });
     //***************
-    
-    //***************
-    // This fucntion will be triggered by clicking Delete button
-    // When click Delete button in Tab2 and Tab4.
-    var delete2_4 = document.getElementById("YesDelete");
-    delete2_4.addEventListener("click", function(){
-        deleteBooks();      
-     });
-    //***************
-    
+      
     //***************
     // This fucntion will be triggered by clicking Find button
     var find3 = document.getElementById("tab3Find");
@@ -499,6 +490,165 @@ window.onload = function(){
         }
     });
     //END APPS-68-S3-NEW_MATCHED_BOOK_TAB
+    
+    //Yuki 01/04/2018 APPS-68-S4-NEW_GRAPH_TAB
+    var list5 = document.getElementById("tab5List");
+    list5.addEventListener("click",function(){
+        //1.Clean and prepare section for new update 
+        document.getElementById("section2").style.display = "none";
+        //2.Show indication when scanning
+        var startTime = new Date;
+        Timer = setInterval(function() {
+            document.getElementById("msg").className = "text-success";
+            document.getElementById("msg").innerHTML = "Finding / Updating... (" + Math.floor((new Date - startTime)/1000) + " Seconds)"; 
+        }, 1000);
+        //3.Find graphs       
+        var strGraphGroups = window.external.ExtCall("GetGraphGroupJSON");
+        if(strGraphGroups == "")
+        {
+            clearInterval(Timer);
+            document.getElementById("msg").className = "text-danger";
+            document.getElementById("msg").innerHTML = "No graph in this project!"; 
+            document.getElementById("section2").style.display = "none";
+            return;
+        }
+        else
+        {
+            //4.List graphs grouped by folders  
+            clearInterval(Timer);
+            newCollapsePanel(2);
+            var graphGroups = JSON.parse(strGraphGroups);
+            var groupSize = Object.keys(graphGroups).length;
+            for(var ii = 0; ii < groupSize; ii++)
+            {
+                var graphsInGroup = JSON.parse(graphGroups[ii]);   
+                var graphFolder =  graphsInGroup[0];
+                newGraphSection(ii, graphFolder);
+                insertGraphsToSection(ii, graphsInGroup);
+                document.getElementById("msg").className = "text-success";
+                document.getElementById("msg").innerHTML = "Click Select button to select the graphs."; 
+            }
+            //6. Tooltip to show the info of graph  
+            $("img").each(function(){   
+                var $anchor = $(this);   
+                var graphPath = $(this).attr("src");
+                var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
+                var graphInfo = window.external.ExtCall("GetGraphInfo", graphName);
+                var JsonOutput = JSON.parse(graphInfo); 
+                var graphTooltip = "";
+                graphTooltip += "<p><b>Long Name</b>: " + JsonOutput.LN + "</p>" + 
+                                "<p><b>Size</b>: " + JsonOutput.Size + "</p>"+
+                                "<p><b>Source</b>: " + JsonOutput.Source + "</p>"
+                //Initialize popover               
+                $anchor.popover({
+                    animate: true,
+                    container: "body",  
+                    delay:{"show": 800},
+                    html: true,
+                    placement:"top",
+                    trigger: "hover",
+                    title: graphName,
+                    content:graphTooltip,
+                });
+            }); 
+             
+            //5. Double click to active graph widow
+            $("img").dblclick(function() 
+            {
+                var graphPath = $(this).attr("src");
+                var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
+                if(window.external.ExtCall("ActivePage", graphName))
+                {
+                    document.getElementById("msg").className = "text-success";
+                    document.getElementById("msg").innerHTML = graphName + " is already active."; 
+                }
+                else
+                {
+                    document.getElementById("msg").className = "text-success";
+                    document.getElementById("msg").innerHTML = "Failed to active " + graphName + "."; 
+                }
+            });
+        }        
+    });
+       
+    selectedImgsArr = [];
+    var selectMode = false;
+    var select5 = document.getElementById("tab5Select");
+    select5.addEventListener("click",function(){
+        if(($("#section2").css("display")) == "none")
+        {
+            document.getElementById("msg").className = "text-danger";
+            document.getElementById("msg").innerHTML = "Please check the graph list at first!"; 
+        }
+        else
+        {
+            if(!selectMode)
+            {
+                selectMode = true;
+                $("span[name='tab5SelectText']").text("Cancel");
+                $("#tab-5 .float-right").show();
+                selectImage(selectedImgsArr);
+            }
+            else
+            {
+                selectMode = false;
+                $("span[name='tab5SelectText']").text("Select");
+                $("#tab-5 .float-right").hide();  
+                $("img").removeClass("selected");
+                $("img").off("click");
+                selectedImgsArr = [];
+            }         
+        }  
+    });
+          
+    var export5 = document.getElementById("tab5Export");
+    export5.addEventListener("click",function(){
+        var ret = window.external.ExtCall("ExportGraph", selectedImgsArr);
+        if(ret)
+        {
+            document.getElementById("msg").className = "text-success";
+            document.getElementById("msg").innerHTML = "The Export Graphs dialog is opened."; 
+        }
+        else
+        {
+            document.getElementById("msg").className = "text-danger";
+            document.getElementById("msg").innerHTML = "Please select at least one graph."; 
+        }        
+    });
+    
+    var sendToGraph5 = document.getElementById("tab5SendToGraph");
+    sendToGraph5.addEventListener("click",function(){
+        var ret = window.external.ExtCall("SendToGraph", selectedImgsArr);
+        if(ret)
+        {
+            document.getElementById("msg").className = "text-success";
+            document.getElementById("msg").innerHTML = "The selected graph previews have been sent to the correspoding graph windows."; 
+        }
+        else
+        {
+            document.getElementById("msg").className = "text-danger";
+            document.getElementById("msg").innerHTML = "Please select at least one graph."; 
+        }        
+    });
+    //END APPS-68-S4-NEW_GRAPH_TAB
+    
+    //***************
+    // This fucntion will be triggered by clicking Delete button
+    // When click Delete button in Tab2, Tab4 and Tab5.
+    $("#YesCancelDialog").on("click", "#YesDelete", function(e) {  
+        //Yuki 01/04/2018 APPS-68-S4-NEW_GRAPH_TAB        
+        var source = $(e.delegateTarget).data("bs.modal").options.source;
+        if("tab5" == source)
+        {
+            deleteGraphs(selectedImgsArr);
+        }
+        //END APPS-68-S4-NEW_GRAPH_TAB
+        else
+        {
+            deleteBooks();
+        }    
+    });
+    //***************   
 };
 
 // This is the function used to generate 
@@ -711,6 +861,38 @@ function deleteBooks()
     });
 }
 
+//Yuki 01/04/2018 APPS-68-S4-NEW_GRAPH_TAB
+function deleteGraphs(selectedImgsArr)
+{
+    alert(selectedImgsArr); 
+    var graphNum = selectedImgsArr.length;
+    if(0 == graphNum)
+    {
+        document.getElementById("msg").className = "text-danger";
+        document.getElementById("msg").innerHTML = "Please select at least one graph."; 
+        return false;
+    }
+    var deleteGraphNum = 0;
+    for(var ii=0; ii < graphNum; ii++)
+    {
+        if(window.external.ExtCall("DeletePage", selectedImgsArr[ii]) == 0)
+        {
+            document.getElementById("msg").className = "text-danger";
+            document.getElementById("msg").innerHTML = "Failed to delete " + selectedImgsArr[ii] + "."; 
+            return false;
+        }
+        //Remove image from the section.
+        var imgElement = $("img[src$='" + selectedImgsArr[ii] + ".png']");
+        imgElement.parents("td").remove();
+        selectedImgsArr.splice(ii, 1);
+        deleteGraphNum++;
+    }
+    document.getElementById("msg").className = "text-success";
+    document.getElementById("msg").innerHTML = "Delete " + deleteGraphNum + " graphs."; 
+    return true;
+}
+//END APPS-68-S4-NEW_GRAPH_TAB
+
 // This is the function used to generate 
 // a dynamic table in the third tab 
 function newTab3Table(RowsNum) 
@@ -769,13 +951,16 @@ function showTab3OneRow(stringOutput, RowIndex)
 } 
 
 //Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
-function newCollapsePanel()
+//Yuki 01/05/2017 APPS-68-S4-NEW_GRAPH_TAB
+//function newCollapsePanel()
+//END APPS-68-S4-NEW_GRAPH_TAB
+function newCollapsePanel(sectionID)
 {
     var data = "";
-    data += "<div class=\"panel-group\" id=\"sec1\">";
+    data += "<div class=\"panel-group\" id=\"sec" + sectionID + "\">";
             "</div>";
-    document.getElementById("section1").style.display = "block";   
-    document.getElementById("section1").innerHTML = data;   
+    document.getElementById("section" + sectionID).style.display = "block";   
+    document.getElementById("section" + sectionID).innerHTML = data;   
 }
 
 function newSection(sectionIndex, RowsNum)
@@ -841,3 +1026,92 @@ function showTab4OneRow(stringOutput, RowIndex, sectionIndex)
     table.rows[RowIndex].cells[5].innerHTML = JsonOutput.ImportedFileNum;
 }
 //END APPS-68-S3-NEW_MATCHED_BOOK_TAB
+
+//Yuki 01/05/2017 APPS-68-S4-NEW_GRAPH_TAB
+function newGraphSection(sectionIndex, graphFolder)
+{
+    var data = "";
+    data += "<div class=\"panel panel-default\">";
+    data += "<div class=\"panel-heading\">" +
+            "<h5 class=\"panel-title\">" + 
+            // "<a data-toggle=\"collapse\" data-parent=\"#sec2\" href=\"#collapse_2" + sectionIndex + "\">" +
+            "Folder:" + graphFolder +
+            // "</a>" +
+            "</h5>" +
+            "</div>"; 
+    //Expand the first section and collapse the other sections
+    // if(sectionIndex == 1) 
+    // {
+    //     data += "<div id=\"collapse_2" + sectionIndex + "\" class=\"panel-collapse collapse in\">";
+    // }
+    // else
+    // {
+    //     data += "<div id=\"collapse_2" + sectionIndex + "\" class=\"panel-collapse collapse\">";    
+    // }
+    data += "<div class=\"panel-body\">"+
+            "<div class=\"table-responsive\">"+
+            "<table id=\"graphSection" + sectionIndex + "tb\" class=\"table table-condensed\">"+      
+            "</table>"+
+            "</div>"+
+            "</div>"; 
+    $("#sec2").append(data); 
+}
+
+function insertGraphsToSection(sectionIndex, graphsInGroup)
+{
+    var graphNum = Object.keys(graphsInGroup).length - 1;
+    var data = "";
+    var cols = 4;
+    var rows = Math.floor(graphNum/cols) + 1; 
+    var graphPaths = [];   
+    for(var ii = 1; ii <= graphNum; ii++)
+    {      
+        var graphName = graphsInGroup[ii];
+        var graphJson = window.external.ExtCall("ShowGraphPreview", graphName);
+        var graphObj = JSON.parse(graphJson);
+        graphPaths[ii] = graphObj.Path;
+    }
+    for(ii = 0; ii < rows; ii++)
+    {
+        data += "<tr>";
+        for(var jj = 0; jj < cols; jj++)
+        {
+            if((ii*cols+jj+1) <= graphNum)
+            {
+                data += "<td>"+
+                        "<img class=\"img-responsive\" src = \"" + graphPaths[ii*cols+jj+1] + "\">"+
+                        "</td>";
+            }
+            else
+            {
+                data += "<td></td>"
+            }
+        }
+        data += "</tr>";
+    }
+    document.getElementById("graphSection" + sectionIndex + "tb").innerHTML = data;  
+}
+
+function selectImage(selectedImgsArr)
+{
+    $("img").click(function() 
+    {
+        var graphPath = $(this).attr("src");
+        var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
+        if ($(this).hasClass("selected"))
+        {
+            $(this).removeClass("selected");
+            selectedImgsArr.splice($.inArray(graphName, selectedImgsArr), 1);
+        }
+        else
+        {
+            $(this).addClass("selected");
+            selectedImgsArr.push(graphName); 
+        }
+        var num = selectedImgsArr.length;
+        document.getElementById("msg").className = "text-success";
+        document.getElementById("msg").innerHTML = "Selecting " + num + " graphs."; 
+    });    
+}
+
+//END APPS-68-S4-NEW_GRAPH_TAB

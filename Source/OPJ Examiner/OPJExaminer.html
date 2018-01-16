@@ -43,6 +43,12 @@
                     </li>
                     <!--END APPS-68-S3-NEW_MATCHED_BOOK_TAB-->
                     
+                    <!--Yuki 01/03/2018 APPS-68-S4-NEW_GRAPH_TAB-->
+                    <li role="presentation">
+                        <a href="#tab-5" data-toggle="tab" title="List all the graphs of this project">Graphs</a>
+                    </li>
+                    <!--END APPS-68-S4-NEW_GRAPH_TAB-->
+                    
                     <!--End LABEL CHANGES AND TOOLTIPS-->
                 </ul>
                 <!--tab body-->
@@ -106,7 +112,7 @@
                                                     <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                                                     <span>Find/Update</span>
                                                 </button>
-                                                <button id="tab2Delete" type="button" class="btn btn-default deletebutton" data-toggle="modal" data-target="#YesCancelDialog"disabled>
+                                                <button id="tab2Delete" type="button" class="btn btn-default deletebutton" data-toggle="modal" data-target="#YesCancelDialog" data-source="tab2" disabled>
                                                     <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                                                     <span>Delete</span>
                                                 </button>
@@ -150,12 +156,12 @@
                                         <td>
                                             <input type="radio" name="matchingmode" value="file" checked>
                                             <label for="file">
-                                                Have a same imported file <small class="text-muted">()</small>
+                                                Have a same imported file <small class="text-muted"></small>
                                             </label>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td>                            
+                                        <td style="display: none">                            
                                             <input type="radio" name="matchingmode" value="structure" disabled>
                                             <label for="structure">
                                                 Have the same data structure <small class="text-muted">()</small>
@@ -172,7 +178,7 @@
                                                                 <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                                                                 <span>Find/Update</span>
                                                             </button>
-                                                            <button id="tab4Delete" type="button" class="btn btn-default deletebutton" data-toggle="modal" data-target="#YesCancelDialog"disabled>
+                                                            <button id="tab4Delete" type="button" class="btn btn-default deletebutton" data-toggle="modal" data-target="#YesCancelDialog" data-source="tab4" disabled>
                                                                 <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
                                                                 <span>Delete</span>
                                                             </button>
@@ -186,7 +192,52 @@
                             </div>
                         </div>
                         <!--tab1 table-->
-                        <div class="panel-section" id="section1" style="display: none" mce_style="display: none"></div>
+                        <div class="panel-section1" id="section1" style="display: none" mce_style="display: none"></div>
+                    </div>
+                    <!--END 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB-->
+                    
+                    <!--Yuki 01/03/2018 APPS-68-S3-NEW_GRAPH_TAB-->
+                    <!--tab5-Graphs-->
+                    <div id="tab-5" class="tab-pane fade">
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <!--tab5 button group-->
+                                <div class="container">      
+                                    <div class="row">
+                                        <div class="col-md-3 col-sm-3 col-xs-6">
+                                            <div class="btn-group btn-group-justified">
+                                                <button id="tab5List" type="button" class="btn btn-default">
+                                                    <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
+                                                    <span>List</span>
+                                                </button>
+                                                <button id="tab5Select" type="button" class="btn btn-default">
+                                                    <span name="tab5SelectIcon" class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+                                                    <span name="tab5SelectText">Select</span>
+                                                </button>
+                                            </div>
+                                        </div>  
+                                        <div class="col-md-7 col-sm-7 col-xs-12">
+                                            <div class="btn-group btn-group-justified float-right" style="display: none">
+                                                <button id="tab5Delete" type="button" class="btn btn-default" data-toggle="modal" data-target="#YesCancelDialog" data-source="tab5">
+                                                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                                                    <span>Delete</span>
+                                                </button>
+                                                <button id="tab5Export" type="button" class="btn btn-default">
+                                                    <span class="glyphicon glyphicon-export" aria-hidden="true"></span>
+                                                    <span>Export</span>
+                                                </button>
+                                                <button id="tab5SendToGraph" type="button" class="btn btn-default">
+                                                    <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
+                                                    <span>Send to Graph</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--tab5 panels-->
+                        <div class="panel-section2" id="section2" style="display: none" mce_style="display: none"></div>
                     </div>
                     <!--END 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB-->
                     

@@ -63,14 +63,24 @@ body {
 }
 
 /*Yuki 10/10/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB*/
-.panel-section{
+.panel-section1{
   position: absolute;
   top: 25rem;
   bottom: 11%;
   width: 98%;
   overflow-y: auto;
 }
-/*END APPS_280-S7 POPUP_CONFIRM_DIALOG_WHEN_DELETE_BOOKS*/
+/*END APPS-68-S3-NEW_MATCHED_BOOK_TAB*/
+ 
+/*Yuki 01/05/2018 APPS-68-S4-NEW_GRAPH_TAB*/
+.panel-section2{
+  position: absolute;
+  top: 20rem;
+  bottom: 11%;
+  width: 98%;
+  overflow-y: auto;
+}
+/*END APPS-68-S4-NEW_GRAPH_TAB*/
  
 .table-responsive{
   padding: 0% 0% 2% 0%;
@@ -109,3 +119,9 @@ a:hover{
     border-width: 0 1rem 1rem;
 }
 /*END LABEL CHANGES AND TOOLTIPS*/
+
+/*Yuki 01/09/2018 APPS-68-S4-NEW_GRAPH_TAB*/
+.selected {
+    border: 2px solid #007BFF;
+}
+/*END APPS-68-S4-NEW_GRAPH_TAB*/

@@ -1,7 +1,10 @@
 #include <Origin.h>
 #include <../OriginLab/DialogEx.h>
 #include <../OriginLab/HTMLDlg.h>
-
+//Yuki 01/03/2018 APPS-68-S4-NEW_GRAPH_TAB
+#include <ojsu.h>
+#include <XFBase.h>
+//END APPS-68-S4-NEW_GRAPH_TAB
 //--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 #include <operation.h>
 //---Yuki 06/02/2017 APPS-280-S4 ALSO_NEED_TO_CHK_INPUT_BOOK
@@ -160,6 +163,9 @@ struct stOneBook
 	//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
 	int ImportedFileNum;
 	//END 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+	//Yuki 01/215/2018 APPS-68-S4-NEW_GRAPH_TAB
+	string Source;
+	//END APPS-68-S4-NEW_GRAPH_TAB
 };
 
 struct stOneGraph
@@ -325,7 +331,7 @@ public:
 		if(!nRet)
 			return "0";
 		
-		string strGraphPath = GetDependentGraphPreview(TempPath, strGraphName);
+		string strGraphPath = GetGraphPreview(TempPath, strGraphName);
 		if(strGraphPath == NULL)
 			return "0";
 		return strGraphPath;
@@ -368,7 +374,7 @@ public:
 			Page pg(vsPageName[ii]);
 			if(pg.IsValid())
 			{
-				string strOneIndependentBook = GetOneBookInfo(true, pg);
+				string strOneIndependentBook = GetOneBookInfo(1, pg);
 				jsscript.showTab2OneRow(strOneIndependentBook, nRowIndex);
 				nRowIndex++;
 			}
@@ -420,7 +426,7 @@ public:
 			Page pg(vsPageName[ii]);
 			if(pg.IsValid())
 			{
-				string strOneDependentBook =GetOneBookInfo(false, pg);
+				string strOneDependentBook =GetOneBookInfo(0, pg);
 				jsscript.showTab3OneRow(strOneDependentBook, nRowIndex);
 				nRowIndex++;
 			}
@@ -450,7 +456,7 @@ public:
 				nSectionIndex++;
 				if(nSectionIndex == 1)
 				{
-					jsscript.newCollapsePanel()
+					jsscript.newCollapsePanel(1)
 				}
 				int nRows = vsSameGroupBook.GetSize();
 
@@ -486,6 +492,77 @@ public:
 	}
 //END APPS-68-S3-NEW_MATCHED_BOOK_TAB
 	
+//Yuki 01/03/2018 APPS-68-S4-NEW_GRAPH_TAB
+	string GetGraphGroupJSON()
+	{
+		vector<string> vsGraphName, vsGraphPath, vsGraphs;
+		int nRet = GetGraphsAndPaths(vsGraphName, vsGraphPath);
+		if(!nRet)
+			return NULL;
+		vsGraphs = GetGraphGroups(vsGraphName, vsGraphPath);
+		string json;
+		vector<int> vnn;
+		vector<string> vsKey;
+		vnn.Data(0, vsGraphs.GetSize()-1, 1);
+		convert_int_vector_to_string_vector(vnn, vsKey);
+		json_generate_key_value_str(&json, &vsKey, &vsGraphs); 
+		return json;
+	}
+	
+	string GetGraphInfo(string strGraphName)
+	{
+		GraphPage gp(strGraphName);
+		if(gp)
+		{
+			string strOneGraphInfo = GetOneBookInfo(3, gp);
+			return strOneGraphInfo;
+		}
+		return NULL;
+	}
+	
+	bool ExportGraph(string strGraphNames)
+	{
+		vector<string> vsGraphNames;
+		int nRet = strGraphNames.GetTokens(vsGraphNames, ',');
+		if(!nRet)
+			return false;
+		string strPageOption;
+		for(int ii = 0; ii < vsGraphNames.GetSize(); ii++)
+		{
+			strPageOption += vsGraphNames[ii] + "%(cr)"; 
+		}
+		strPageOption = "\"" + strPageOption + "\"";
+		string strLTCommand;
+		strLTCommand = "expGraph export:=specified pages:=" + strPageOption + " -d;";
+		LT_execute(strLTCommand);
+		return true;
+	}
+	
+	bool SendToGraph(string strGraphNames)
+	{
+		vector<string> vsGraphNames;
+		int nRet = strGraphNames.GetTokens(vsGraphNames, ',');
+		if(!nRet)
+			return false;
+		char TempPath[MAXFULLPATH];
+		GetTempPath(MAXFULLPATH, TempPath);
+		for(int ii = 0; ii < vsGraphNames.GetSize(); ii++)
+		{
+			string strGraphPath = TempPath + vsGraphNames[ii] + ".png";
+			XFBase xf("insertImg2g");
+			if (!xf)
+				return false;
+			if (!xf.SetArg("fname", strGraphPath))
+				return false;
+			GraphPage gp(vsGraphNames[ii]);
+			if (!xf.SetArg("ipg", gp))
+				return false;
+			if (!xf.Evaluate())
+				return false;
+		}
+		return true;
+	}
+//END APPS-68-S4-NEW_MATCHED_BOOK_TAB
 
 private:
 	// This function is used to count the worksheets/matrix sheets
@@ -588,7 +665,6 @@ private:
 		return CurrentName;
 	}
 	
-	
 	//This function is used to show a full string 
 	//the dependent graph info in message box
 	bool DependentsVector(string strMode, string strObjName, vector<string>& vsGraphName)
@@ -621,7 +697,7 @@ private:
 		return true;	
 	}
 	
-	string GetDependentGraphPreview(string strFolder, string strGraphName)
+	string GetGraphPreview(string strFolder, string strGraphName)
 	{
 		stOneGraph stOneResult;
 		string strOneGraph;
@@ -640,7 +716,6 @@ private:
 		JSON.ToString(stOneResult, strOneGraph);
 		return strOneGraph;
 	}
-	
 	
 	// This function is used to count the independent or dependent book in project.
 	int GetBooksNum(bool bIndependentMode, vector<string>& vsPageName)
@@ -697,7 +772,11 @@ private:
 	
 	//This function is used to get 
 	//one independent or dependent book info
-	string GetOneBookInfo(bool bIndependentMode, Page pg)
+	//nMode = 0 book with dependents
+	//nMode = 1 independent book
+	//nMode = 2 matched book
+	//nMode = 3 graph widow
+	string GetOneBookInfo(int nMode, Page pg)
 	{
 		stOneBook stOneResult;
 		stOneResult.SN = pg.GetName();
@@ -708,7 +787,7 @@ private:
 		stOneResult.Path =pgInfo.szLocation;
 		string size = pgInfo.szSize;
 		stOneResult.Size = size.GetToken(0, '(');
-		if(!bIndependentMode)
+		if(0 == nMode)
 		{
 			FindDependentHelper _dep;
 			vector<string> vs;
@@ -723,22 +802,48 @@ private:
 			stOneResult.Num = vs.GetSize() + mm;
 			//--- END FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 		}
-		else
+		else if(1 == nMode)
 		{
 			//---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
 			vector<uint> unOpIDs;
 			stOneResult.OP = find_operations(pg, unOpIDs);
 			//---END 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
 		}
-		
-		//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
-		Tree tr;
-		stOneResult.ImportedFileNum = GetImportedFileNum(pg, tr);
-		//END APPS-68-S3-NEW_MATCHED_BOOK_TAB
-		
-		string strOneIndependent;
-		JSON.ToString(stOneResult, strOneIndependent);
-		return strOneIndependent;
+		else if(2 == nMode)
+		{
+			//Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
+			Tree tr;
+			stOneResult.ImportedFileNum = GetImportedFileNum(pg, tr);
+			//END APPS-68-S3-NEW_MATCHED_BOOK_TAB
+		}
+		else if(3 == nMode)
+		{
+			string strSource = "";
+			int nPageType = pg.GetType();
+			if(3 == nPageType)
+			{
+				GraphPage gp(pg.GetName());
+				foreach(GraphLayer gl in gp.Layers)
+				{
+					foreach(DataPlot dp in gl.DataPlots)
+					{
+						DataRange drSource;
+						dp.GetDataRange(drSource);
+						Datasheet dsSource;
+						drSource.GetParent(dsSource);
+						string strRange;
+						//Page pgSource = dsSource.GetPage();
+						dsSource.GetRangeString(strRange, NTYPE_LAYER_NO_EXCLAMATION); 
+						strSource += strRange + "\n";
+						
+					}
+				}
+			}
+			stOneResult.Source = strSource;
+		}
+		string strOnePage;
+		JSON.ToString(stOneResult, strOnePage);
+		return strOnePage;
 	}
 
 //Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
@@ -814,6 +919,58 @@ private:
 	}
 //END APPS-68-S3-NEW_MATCHED_BOOK_TAB
 
+//Yuki 01/03/2018 APPS-68-S4-NEW_GRAPH_TAB
+	int GetGraphsAndPaths(vector<string> &vsGraphName, vector<string> &vsGraphPath)
+	{
+		int nCount = 0;
+		foreach(GraphPage gp in Project.GraphPages)
+		{
+			if(gp)
+			{
+				string strGraphName = gp.GetName();
+				Folder fd = gp.GetFolder();
+				string strGraphPath = fd.GetPath();
+				vsGraphName.Add(strGraphName);
+				vsGraphPath.Add(strGraphPath);
+				nCount++;
+			}
+		}
+		return nCount;
+	}
+
+	string GroupGraphsHaveSamePath(string strPath, vector<string> &vsGraphName, vector<string> &vsGraphPath)
+	{
+		vector<string> vsGraphJson;
+		vsGraphJson.Add(strPath);
+		for(int ii = 0; ii < vsGraphName.GetSize(); ii++)
+		{
+			if(strPath == vsGraphPath[ii])
+			{
+				vsGraphJson.Add(vsGraphName[ii]);
+			}
+		}
+		string json;
+		vector<int> vnn;
+		vector<string> vsKey;
+		vnn.Data(0, vsGraphJson.GetSize()-1, 1);
+		convert_int_vector_to_string_vector(vnn, vsKey);
+		json_generate_key_value_str(&json, &vsKey, &vsGraphJson); 
+		return json;
+	}
+
+	vector<string> &GetGraphGroups(vector<string> &vsGraphName, vector<string> &vsGraphPath)
+	{
+		vector<string> vsGraphs, vsGraphPathNew;
+		vsGraphPathNew = vsGraphPath;
+		remove_repeat_item(vsGraphPathNew);
+		for(int ii =0; ii < vsGraphPathNew.GetSize(); ii++)
+		{
+			string json = GroupGraphsHaveSamePath(vsGraphPathNew[ii], vsGraphName, vsGraphPath);
+			vsGraphs.Add(json);
+		}
+		return vsGraphs;
+	}
+//END APPS-68-S4-NEW_MATCHED_BOOK_TAB
 private:
 	Page m_pg;
 	Worksheet m_wks;
@@ -831,6 +988,10 @@ BEGIN_DISPATCH_MAP(OPJExaminerDlg, HTMLDlg)
 	DISP_FUNCTION(OPJExaminerDlg, GetDependentBookInfo, VTS_I4, VTS_VOID)
 	DISP_FUNCTION(OPJExaminerDlg, GetMatchedBookInfo, VTS_I4, VTS_VOID)
 	DISP_FUNCTION(OPJExaminerDlg, GetMatchedBookGroupInfo, VTS_STR, VTS_I4)
+	DISP_FUNCTION(OPJExaminerDlg, GetGraphGroupJSON, VTS_STR, VTS_VOID)
+	DISP_FUNCTION(OPJExaminerDlg, GetGraphInfo, VTS_STR, VTS_STR)
+	DISP_FUNCTION(OPJExaminerDlg, ExportGraph, VTS_BOOL, VTS_STR)
+	DISP_FUNCTION(OPJExaminerDlg, SendToGraph, VTS_BOOL, VTS_STR)
 END_DISPATCH_MAP
 
 //---- LabTalk Access
