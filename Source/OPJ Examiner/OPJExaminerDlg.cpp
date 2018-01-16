@@ -925,7 +925,7 @@ private:
 		int nCount = 0;
 		foreach(GraphPage gp in Project.GraphPages)
 		{
-			if(gp)
+			if(!gp.GetEmbeddingInfo())
 			{
 				string strGraphName = gp.GetName();
 				Folder fd = gp.GetFolder();

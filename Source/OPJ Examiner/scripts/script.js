@@ -526,7 +526,7 @@ window.onload = function(){
                 newGraphSection(ii, graphFolder);
                 insertGraphsToSection(ii, graphsInGroup);
                 document.getElementById("msg").className = "text-success";
-                document.getElementById("msg").innerHTML = "Click Select button to select the graphs."; 
+                document.getElementById("msg").innerHTML = "Double click to active, and hover to show info."; 
             }
             //6. Tooltip to show the info of graph  
             $("img").each(function(){   
