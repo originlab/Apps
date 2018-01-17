@@ -834,7 +834,7 @@ private:
 						string strRange;
 						//Page pgSource = dsSource.GetPage();
 						dsSource.GetRangeString(strRange, NTYPE_LAYER_NO_EXCLAMATION); 
-						strSource += strRange + "\n";
+						strSource += strRange + ";\n";
 						
 					}
 				}
