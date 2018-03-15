@@ -607,7 +607,7 @@ private:
 		
 		stOneResult.SN = obj.GetName();
 		stOneResult.LN = obj.GetLongName();
-		nn = obj.FindDepdendentGraphs(vsGraph);
+		nn = obj.FindDependentGraphs(vsGraph);
 		//int nSize = vsGraph.GetSize();
 		for(int ii = 0; ii < vsGraph.GetSize(); ii++)
 		{
@@ -676,7 +676,7 @@ private:
 		if(strMode == "sheet")
 		{
 			Layer sheetLayer = pg.Layers(strObjName);
-			nn = sheetLayer.FindDepdendentGraphs(vsGraphName);
+			nn = sheetLayer.FindDependentGraphs(vsGraphName);
 		}
 		if(strMode == "column")
 		{
@@ -684,14 +684,14 @@ private:
 			{
 				Worksheet wks = m_wks;
 				Column cc = wks.Columns(strObjName);
-				nn = cc.FindDepdendentGraphs(vsGraphName);
+				nn = cc.FindDependentGraphs(vsGraphName);
 			}
 			
 			if(pg.GetType() == EXIST_MATRIX)
 			{
 				MatrixLayer matrixly = m_matrixly;
 				MatrixObject matrixObj = matrixly.MatrixObjects(strObjName);
-				nn = matrixObj.FindDepdendentGraphs(vsGraphName);
+				nn = matrixObj.FindDependentGraphs(vsGraphName);
 			}
 		}
 		return true;	
@@ -734,7 +734,7 @@ private:
 			int nPageType = pg.GetType();
 			if(nPageType == EXIST_WKS || nPageType == EXIST_MATRIX)
 			{
-				int nn = pg.FindDepdendentGraphs(vsGraphName);
+				int nn = pg.FindDependentGraphs(vsGraphName);
 				//--- CPY 5/29/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 				Page pgBook = pg;
 				nn += find_dependent_analysis_output_books(pgBook);
@@ -792,7 +792,7 @@ private:
 			FindDependentHelper _dep;
 			vector<string> vs;
 			int nn;
-			nn = pg.FindDepdendentGraphs(vs);
+			nn = pg.FindDependentGraphs(vs);
 			//--- Yuki 5/31/2017 APPS-280-S4 FIND_OP_OUTPUT_SHEET_NOT_IN_BOOK
 			int mm;
 			mm += find_dependent_analysis_output_books(pg);
