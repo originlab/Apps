@@ -511,13 +511,22 @@ public:
 	
 	string GetGraphInfo(string strGraphName)
 	{
-		GraphPage gp(strGraphName);
-		if(gp)
+		//Yuki 03/16/2018 APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
+		if(strGraphName == "undefined")
 		{
-			string strOneGraphInfo = GetOneBookInfo(3, gp);
-			return strOneGraphInfo;
+			return "undefined";
 		}
-		return NULL;
+		//END APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
+		else
+		{
+			GraphPage gp(strGraphName);
+			if(gp)
+			{
+				string strOneGraphInfo = GetOneBookInfo(3, gp);
+				return strOneGraphInfo;
+			}
+			return NULL;
+		}
 	}
 	
 	bool ExportGraph(string strGraphNames)

@@ -529,16 +529,27 @@ window.onload = function(){
                 document.getElementById("msg").innerHTML = "Double click to active, and hover to show info."; 
             }
             //6. Tooltip to show the info of graph  
-            $("img").each(function(){   
+            $("img").each(function(){  
+                var graphTooltip = "";
                 var $anchor = $(this);   
                 var graphPath = $(this).attr("src");
                 var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
                 var graphInfo = window.external.ExtCall("GetGraphInfo", graphName);
-                var JsonOutput = JSON.parse(graphInfo); 
-                var graphTooltip = "";
-                graphTooltip += "<p><b>Long Name</b>: " + JsonOutput.LN + "</p>" + 
-                                "<p><b>Size</b>: " + JsonOutput.Size + "</p>"+
-                                "<p><b>Source</b>: " + JsonOutput.Source + "</p>"
+                //Yuki 03/16/2018 APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
+                if(graphInfo == "undefined")
+                {
+                    graphTooltip = "<p style=\"color:#dc3545\">The preview is not available, but you can create preview graphs in Project Explorer.</p>" +
+                                    "<p style=\"color:#dc3545\">Hover over any graph window in Project Explorer, then click the Create button in the pop-up message.</p>"
+                }
+                else
+                {
+                    var JsonOutput = JSON.parse(graphInfo); 
+                    //var graphTooltip = "";
+                    graphTooltip += "<p><b>Long Name</b>: " + JsonOutput.LN + "</p>" + 
+                                    "<p><b>Size</b>: " + JsonOutput.Size + "</p>"+
+                                    "<p><b>Source</b>: " + JsonOutput.Source + "</p>";
+                }
+                //END APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
                 //Initialize popover               
                 $anchor.popover({
                     animate: true,
@@ -969,6 +980,10 @@ function newSection(sectionIndex, RowsNum)
     data += "<div class=\"panel-heading\">" +
             "<h5 class=\"panel-title\">" + 
             "<a data-toggle=\"collapse\" data-parent=\"#sec1\" href=\"#collapse" + sectionIndex + "\">" +
+            //Yuki 03/16/2018 APPS_280_S8_ADD_BUTTONS_TO_SHOW_THE_SECTION_TITLE_STRAIGHTFORWARD
+            "<span class=\"glyphicon glyphicon glyphicon-triangle-bottom\" aria-hidden=\"true\"></span>" +
+            "<span> </span>" +
+            // END APPS_280_S8_ADD_BUTTONS_TO_SHOW_THE_SECTION_TITLE_STRAIGHTFORWARD
             "Found #" + sectionIndex +
             "</a>" +
             "</h5>" +
@@ -1067,6 +1082,7 @@ function insertGraphsToSection(sectionIndex, graphsInGroup)
     {      
         var graphName = graphsInGroup[ii];
         var graphJson = window.external.ExtCall("ShowGraphPreview", graphName);
+        //alert(graphJson);
         var graphObj = JSON.parse(graphJson);
         graphPaths[ii] = graphObj.Path;
     }
