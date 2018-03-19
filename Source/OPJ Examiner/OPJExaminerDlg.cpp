@@ -187,19 +187,20 @@ protected:
 	string GetDialogTitle() {return "OPJ Examiner";}
 
 public:
-	int Create(HWND hParent = NULL)
+	int Create(HWND hParent = NULL, DWORD dwOptions = 0)
 	{
 		InitMsgMap();
-		int nRet = HTMLDlg::Create(hParent);
-		ModifyStyle(0, WS_MAXIMIZEBOX);
-		ModifyStyle(0, WS_MINIMIZEBOX);
+		int nRet = HTMLDlg::Create(hParent,dwOptions);
+		//ModifyStyle(0, WS_MAXIMIZEBOX);
+		//ModifyStyle(0, WS_MINIMIZEBOX);
+		ModifyStyle(0, WS_MAXIMIZEBOX | WS_MINIMIZEBOX);
 		
 		//-----Yuki 2017-05-17 APPS_280-S1 CHANGE_TO_USE_SYS_VAR_FOR_DPI
 		okutil_sys_values("BDPI", &m_sysValBDPI);//Remember current into dialog variable
 		double dTemp=1;
 		okutil_sys_values("BDPI", &dTemp, false);//Set @BDPI=1
 		
-		m_dhtml.UpdateWindow();
+		//m_dhtml.UpdateWindow();
 		return nRet;
 	}
 protected:
@@ -237,13 +238,28 @@ protected:
 		if( !IsInitReady() )
 			return false;
 
-		 MoveControlsHelper _temp(this); // you can uncomment this line, if the dialog flickers when you resize it
+		//MoveControlsHelper _temp(this); // you can uncomment this line, if the dialog flickers when you resize it
 		HTMLDlg::OnDlgResize(nType, cx, cy); //place html control in dialog
 
 		if( !IsHTMLDocumentCompleted() ) //check the state of HTML control
 			return FALSE;
 
 		return TRUE;
+	}
+	
+	int	GetMinClientTrackWidth()
+	{
+		return CheckConvertDlgSizeWithDPI(800, true);
+	}
+
+	int	GetMinClientTrackHeight()
+	{
+		return CheckConvertDlgSizeWithDPI(531, false);
+	}
+	
+	bool OnSystemCommand(int nCmd)
+	{
+		return HTMLDlg::OnSystemCommand(nCmd);
 	}
 	
 public:
@@ -253,6 +269,8 @@ public:
 		ON_INIT(OnInitDialog)
 		ON_DESTROY(OnDestroy)
 		ON_SIZE(OnDlgResize) //Disable resize
+		ON_SYSCOMMAND(OnSystemCommand)
+		ON_GETMINMAXINFO(OnMinMaxInfo)
 	EVENTS_END_DERIV
 
 	// This method will be called from Javascript.
