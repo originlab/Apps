@@ -883,18 +883,21 @@ function deleteGraphs(selectedImgsArr)
         return false;
     }
     var deleteGraphNum = 0;
-    for(var ii=0; ii < graphNum; ii++)
+    //-----Yuki 2018-05-04 APPS_280-P9 NEED_TO_DELETE_FROM_BOTTOM_TO_TOP
+    //for(var ii = 0; ii < graphNum; ii++)
+    for(var ii = graphNum; ii > 0; ii -= 1)
+    //END APPS_280-P9 NEED_TO_DELETE_FROM_BOTTOM_TO_TOP
     {
-        if(window.external.ExtCall("DeletePage", selectedImgsArr[ii]) == 0)
+        if(window.external.ExtCall("DeletePage", selectedImgsArr[ii - 1]) == 0)
         {
             document.getElementById("msg").className = "text-danger";
             document.getElementById("msg").innerHTML = "Failed to delete " + selectedImgsArr[ii] + "."; 
             return false;
         }
         //Remove image from the section.
-        var imgElement = $("img[src$='" + selectedImgsArr[ii] + ".png']");
+        var imgElement = $("img[src$='" + selectedImgsArr[ii - 1] + ".png']");
         imgElement.parents("td").remove();
-        selectedImgsArr.splice(ii, 1);
+        selectedImgsArr.splice(ii - 1, 1);
         deleteGraphNum++;
     }
     document.getElementById("msg").className = "text-success";

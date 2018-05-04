@@ -855,9 +855,15 @@ private:
 					foreach(DataPlot dp in gl.DataPlots)
 					{
 						DataRange drSource;
-						dp.GetDataRange(drSource);
+						bool bRet = dp.GetDataRange(drSource);
 						Datasheet dsSource;
 						drSource.GetParent(dsSource);
+						string strDatasheetName;
+						//-----Yuki 2018-05-04 APPS_280-P9 IN_CASE_OF_LOOSE_DATASET
+						bRet = dsSource.GetName(strDatasheetName);
+						if(!bRet)
+							continue;
+						//END 2018-05-04 APPS_280-P9 IN_CASE_OF_LOOSE_DATASET
 						string strRange;
 						//Page pgSource = dsSource.GetPage();
 						dsSource.GetRangeString(strRange, NTYPE_LAYER_NO_EXCLAMATION); 
