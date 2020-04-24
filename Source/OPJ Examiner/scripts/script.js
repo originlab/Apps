@@ -17,23 +17,26 @@ window.onload = function(){
     $.tablesorter.addParser({
         id: "datasize",
         is: function(s) {
-            return s.match(new RegExp(/[0-9]+(\.[0-9]+)?\ (KB|B|GB|MB|TB)/));
+            return s.match(new RegExp(/[0-9]+(\.[0-9]+)?\ (--|KB|B|GB|MB|TB)/));
         },
         format: function(s) {
-            var suf = s.match(new RegExp(/(KB|B|GB|MB|TB)$/))[1];
-            var num = parseFloat( s.match(new RegExp(/^[0-9]+(\.[0-9]+)?/))[0]);
-
-            switch( suf ) {
-                case 'B':
-                    return num;
-                case 'KB':
-                    return num * 1024;
-                case 'MB':
-                    return num * 1024 * 1024;
-                case 'GB':
-                    return num * 1024 * 1024 * 1024;
-                case 'TB':
-                    return num * 1024 * 1024 * 1024 * 1024;
+            var suf = s.match(new RegExp(/(--|KB|B|GB|MB|TB)$/))[1];
+            if('--' == suf)
+                return null;
+            else{
+                var num = parseFloat( s.match(new RegExp(/^[0-9]+(\.[0-9]+)?/))[0]);
+                switch( suf ) {
+                    case 'B':
+                        return num;
+                    case 'KB':
+                        return num * 1024;
+                    case 'MB':
+                        return num * 1024 * 1024;
+                    case 'GB':
+                        return num * 1024 * 1024 * 1024;
+                    case 'TB':
+                        return num * 1024 * 1024 * 1024 * 1024;
+                }
             }
         },
         type: "numeric" 
@@ -163,8 +166,9 @@ window.onload = function(){
             document.getElementById("msg").innerHTML = "Finding / Updating... (" + Math.floor((new Date - startTime)/1000) + " Seconds)"; 
         }, 1000);
         //---END SCANNING_NEEDS_PROGRESS_INDICATION
-        
-        var findStatus = window.external.ExtCall("GetIndependentBookInfo");
+
+        var checkmode = document.querySelector('#tab-2 input[name="radiomode"]:checked').value;
+        var findStatus = window.external.ExtCall("GetIndependentBookInfo", checkmode);
         //3. Show message in box
         if(findStatus < 0)
         {
@@ -182,7 +186,7 @@ window.onload = function(){
             clearInterval(Timer);
             //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-danger";
-            document.getElementById("msg").innerHTML = "There is no independent book in this project."; 
+            document.getElementById("msg").innerHTML = "There is no independent book/sheet in this project."; 
             document.getElementById("table2").style.display = "none";
             return;
         }
@@ -192,7 +196,7 @@ window.onload = function(){
             clearInterval(Timer);
             //---END SCANNING_NEEDS_PROGRESS_INDICATION
             document.getElementById("msg").className = "text-success";
-            document.getElementById("msg").innerHTML = "Double click on any row to activate the book."; 
+            document.getElementById("msg").innerHTML = "Double click on any row to activate the book/sheet."; 
             //4. Enable to sort table by clicking table header
             $(function(){
                 $("#tb2").tablesorter({
@@ -247,16 +251,24 @@ window.onload = function(){
                         //6. Double click any row in table to activate its corresponding workbook
                         return function() {  
                                             var cell = row.getElementsByTagName("td")[1];
-                                            var bookName = cell.innerHTML;
-                                            if(window.external.ExtCall("ActivePage", bookName))
+                                            var name = cell.innerHTML;
+                                            var location = row.getElementsByTagName("td")[3].innerHTML;
+                                            var ret;
+                                            if("book" == checkmode)
+                                                ret = window.external.ExtCall("ActivePage", name);
+                                            else if("sheet" == checkmode)
+                                                ret = window.external.ExtCall("ActiveSheet", name, location);
+                                            else
+                                                ret = false;
+                                            if(ret)
                                             {
                                                 document.getElementById("msg").className = "text-success";
-                                                document.getElementById("msg").innerHTML =  bookName + " is already active."; 
+                                                document.getElementById("msg").innerHTML =  name + " is already active."; 
                                             }
                                             else
                                             {
                                                 document.getElementById("msg").className = "text-success";
-                                                document.getElementById("msg").innerHTML = "Failed to active " + bookName + "."; 
+                                                document.getElementById("msg").innerHTML = "Failed to active " + name + "."; 
                                             }
                                         };
                     };
@@ -656,7 +668,12 @@ window.onload = function(){
         //END APPS-68-S4-NEW_GRAPH_TAB
         else
         {
-            deleteBooks();
+            if("tab2" == source) {
+                var checkmode = document.querySelector('#tab-2 input[name="radiomode"]:checked').value;
+                deleteBooksOrSheets(checkmode);
+            }
+            else
+                deleteBooksOrSheets("book");
         }    
     });
     //***************   
@@ -798,9 +815,9 @@ function newTab2Table(RowsNum)
         data += "<thead>" + 
                 "<tr>" + 
                 "<th># <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></span></th>" +
-                "<th>Book<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Book/Sheet <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Long Name <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
-                "<th>Project Folder <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+                "<th>Location <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 "<th>Size <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
                 //---Yuki 06/02/2017 APPS-280-S6 INDEP_BOOK_SHOW_OP_COUNT
                 "<th>Operations <span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
@@ -846,7 +863,7 @@ function showTab2OneRow(stringOutput, RowIndex)
 
 // This is the function used to delete 
 // the rows that is checked in table 
-function deleteBooks()
+function deleteBooksOrSheets(bookOrSheet)
 {
     var deleteRowNum = 0;
     //Yuki 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
@@ -854,7 +871,14 @@ function deleteBooks()
         var $anchor = $(this);
         $(this).find("tbody input:checked").parents("tr").find("td:nth-child(2)").each(function() {
     //END 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
-            if(window.external.ExtCall("DeletePage", this.innerHTML) == 0)
+            var ret;
+            if("book" == bookOrSheet)
+                ret = window.external.ExtCall("DeletePage", this.innerHTML);
+            else {
+                var location = $(this).next('td').next('td').text();
+                ret = window.external.ExtCall("DeleteSheet", this.innerHTML, location);
+            }
+            if(!ret)
             {
                 document.getElementById("msg").className = "text-danger";
                 document.getElementById("msg").innerHTML = "Failed to delete " + this.innerHTML + "."; 
@@ -867,7 +891,7 @@ function deleteBooks()
         $anchor.trigger("update");
         //END 10/11/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
         document.getElementById("msg").className = "text-success";
-        document.getElementById("msg").innerHTML = "Delete " + deleteRowNum + " books."; 
+        document.getElementById("msg").innerHTML = "Delete " + deleteRowNum + " book(s)/sheet(s)."; 
         $(".deletebutton").attr('disabled', 'disabled');
     });
 }
@@ -883,21 +907,18 @@ function deleteGraphs(selectedImgsArr)
         return false;
     }
     var deleteGraphNum = 0;
-    //-----Yuki 2018-05-04 APPS_280-P9 NEED_TO_DELETE_FROM_BOTTOM_TO_TOP
-    //for(var ii = 0; ii < graphNum; ii++)
-    for(var ii = graphNum; ii > 0; ii -= 1)
-    //END APPS_280-P9 NEED_TO_DELETE_FROM_BOTTOM_TO_TOP
+    for(var ii=0; ii < graphNum; ii++)
     {
-        if(window.external.ExtCall("DeletePage", selectedImgsArr[ii - 1]) == 0)
+        if(window.external.ExtCall("DeletePage", selectedImgsArr[ii]) == 0)
         {
             document.getElementById("msg").className = "text-danger";
             document.getElementById("msg").innerHTML = "Failed to delete " + selectedImgsArr[ii] + "."; 
             return false;
         }
         //Remove image from the section.
-        var imgElement = $("img[src$='" + selectedImgsArr[ii - 1] + ".png']");
+        var imgElement = $("img[src$='" + selectedImgsArr[ii] + ".png']");
         imgElement.parents("td").remove();
-        selectedImgsArr.splice(ii - 1, 1);
+        selectedImgsArr.splice(ii, 1);
         deleteGraphNum++;
     }
     document.getElementById("msg").className = "text-success";

@@ -375,10 +375,18 @@ public:
 	// This method will be called from Javascript.
 	// This function is used to get the info of independent 
 	// book and fill the table.
-	int GetIndependentBookInfo()
+	int GetIndependentBookInfo(string strMode)
 	{	
-		vector<string> vsPageName;
-		int nNum = GetBooksNum(true, vsPageName);
+		vector<string> vsPageName, vsSheetName;
+		int nNum;
+		if("book" == strMode) {
+			nNum = GetBooksNum(true, vsPageName);
+		}
+		else if("sheet" == strMode) {
+			nNum = GetSheetsNum(true, vsPageName, vsSheetName);
+		}
+		else
+			return -1;
 		if(nNum < 1)
 			return nNum;
 		Object jsscript = m_dhtml.GetScript();
@@ -387,16 +395,33 @@ public:
 		jsscript.newTab2Table(nNum);
 		
 		int nRowIndex =1;
-		for(int ii=0; ii < vsPageName.GetSize(); ii++)
-		{
-			Page pg(vsPageName[ii]);
-			if(pg.IsValid())
+		if("book" == strMode){
+			for(int ii=0; ii < vsPageName.GetSize(); ii++)
 			{
+				Page pg(vsPageName[ii]);
+				if(!pg.IsValid())
+					return false;
 				string strOneIndependentBook = GetOneBookInfo(1, pg);
 				jsscript.showTab2OneRow(strOneIndependentBook, nRowIndex);
 				nRowIndex++;
 			}
 		}
+		//Yuki 04/24/APPS-904 ADD_SHEET_MODE_IN_INDEPENDENT_TAB
+		else if("sheet" == strMode) {
+			for(int ii=0; ii < vsSheetName.GetSize(); ii++){
+				Page pg(vsPageName[ii]);
+				Layer ly =  pg.Layers(vsSheetName[ii]);
+				if(!ly)
+					return false;
+				Datasheet dts(ly);
+				string strOneIndependentSheet = GetOneSheetInfo(dts);
+				jsscript.showTab2OneRow(strOneIndependentSheet, nRowIndex);
+				nRowIndex++;
+			}
+		}
+		//END 04/24/APPS-904 ADD_SHEET_MODE_IN_INDEPENDENT_TAB
+		else
+			return false;
 		return true;
 	}
 	
@@ -407,10 +432,22 @@ public:
 		PageBase pg(strbookName);
 		if(!pg)
 			return false;   
-		else
-			pg.SetShow(PAGE_ACTIVATE); 
-			return true;
+		pg.SetShow(PAGE_ACTIVATE); 
+		return true;
 	}
+	
+	bool ActiveSheet(string strSheetName, string strLocation)
+	{
+		string strPageName = strLocation.GetToken(3,'/');
+		Page pg(strPageName);
+		if(!pg)
+			return false;
+		Datasheet dts = pg.Layers(strSheetName);
+		if(!dts)
+			return false;
+		return set_active_layer(dts);
+	}
+	
 	
 	// This method will be called from Javascript.
 	// This function is used to delete book
@@ -423,6 +460,21 @@ public:
 			pg.Destroy(); 
 			return true;
 	}
+	
+	//Yuki 04/24/APPS-904 ADD_SHEET_MODE_IN_INDEPENDENT_TAB
+	bool DeleteSheet(string strSheetName, string strLocation)
+	{
+		string strPageName = strLocation.GetToken(3,'/');
+		Page pg(strPageName);
+		if(!pg)
+			return false;
+		Datasheet dts = pg.Layers(strSheetName);
+		if(!dts)
+			return false;
+		dts.Destroy();
+		return true;
+	}
+	//END 04/24/APPS-904 ADD_SHEET_MODE_IN_INDEPENDENT_TAB
 	
 	// This method will be called from Javascript.
 	// This function is used to get the info of dependent 
@@ -745,6 +797,41 @@ private:
 	}
 	
 	// This function is used to count the independent or dependent book in project.
+	int GetSheetsNum(bool bIndependentMode, vector<string>& vsPageName, vector<string>& vsSheetName) {
+		vsSheetName.SetSize(0);
+		FindDependentHelper _dep;
+		vector<string> vsGraphName;
+		foreach(PageBase pgbase in Project.Pages){
+			if(!pgbase.IsValid())
+				return -1;
+			int nPageType = pgbase.GetType();
+			if(nPageType == EXIST_WKS || nPageType == EXIST_MATRIX)
+			{
+				Page pg = pgbase;
+				foreach(Layer ly in pg.Layers){
+					int nn = ly.FindDependentGraphs(vsGraphName);
+					vector<uint> unOpIDs;
+					ly.FindOutgoingOperations(unOpIDs);
+					unOpIDs.Append(unOpIDs);
+					if(bIndependentMode){
+						if(0 == nn){
+							vsPageName.Add(pg.GetName());
+							vsSheetName.Add(ly.GetName());
+						}
+					}
+					else{
+						if(nn > 0){
+							vsPageName.Add(pg.GetName());
+							vsSheetName.Add(ly.GetName());
+						}
+					}
+				}
+			}
+		}
+		return vsSheetName.GetSize();
+	}
+	
+	// This function is used to count the independent or dependent book in project.
 	int GetBooksNum(bool bIndependentMode, vector<string>& vsPageName)
 	{
 		FindDependentHelper _dep;
@@ -879,6 +966,26 @@ private:
 		return strOnePage;
 	}
 
+	//Yuki 04/24/APPS-904 ADD_SHEET_MODE_IN_INDEPENDENT_TAB
+	string GetOneSheetInfo(Datasheet dts){
+		stOneBook stOneResult;
+		stOneResult.SN = dts.GetName();
+		stOneResult.LN = dts.GetLongName();
+		Page pg = dts.GetPage();
+		PropertyInfo pgInfo;
+		if(!pg.GetPageInfo(pgInfo))
+			return NULL;
+		stOneResult.Path = pgInfo.szLocation + pg.GetName();
+		stOneResult.Size = "--";
+		vector<uint> unOpIDs;
+		dts.FindOutgoingOperations(unOpIDs);
+		stOneResult.OP = unOpIDs.GetSize();
+		string strOneSheet;
+		JSON.ToString(stOneResult, strOneSheet);
+		return strOneSheet;
+	}
+	//END 04/24/APPS-904 ADD_SHEET_MODE_IN_INDEPENDENT_TAB
+	
 //Yuki 09/27/2017 APPS-68-S3-NEW_MATCHED_BOOK_TAB
 	//This function is used to get the number of the imported file
 	int GetImportedFileNum(Page pg, Tree& tr)
@@ -1015,9 +1122,11 @@ BEGIN_DISPATCH_MAP(OPJExaminerDlg, HTMLDlg)
 	DISP_FUNCTION(OPJExaminerDlg, GetAllDependentsInfo, VTS_I4, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, ShowGraphPreview, VTS_STR, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, ShowGraphNameString, VTS_STR, VTS_STR VTS_STR)
-	DISP_FUNCTION(OPJExaminerDlg, GetIndependentBookInfo, VTS_I4, VTS_VOID)
+	DISP_FUNCTION(OPJExaminerDlg, GetIndependentBookInfo, VTS_I4, VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, ActivePage, VTS_BOOL, VTS_STR)
+	DISP_FUNCTION(OPJExaminerDlg, ActiveSheet, VTS_BOOL, VTS_STR VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, DeletePage, VTS_BOOL, VTS_STR)
+	DISP_FUNCTION(OPJExaminerDlg, DeleteSheet, VTS_BOOL, VTS_STR VTS_STR)
 	DISP_FUNCTION(OPJExaminerDlg, GetDependentBookInfo, VTS_I4, VTS_VOID)
 	DISP_FUNCTION(OPJExaminerDlg, GetMatchedBookInfo, VTS_I4, VTS_VOID)
 	DISP_FUNCTION(OPJExaminerDlg, GetMatchedBookGroupInfo, VTS_STR, VTS_I4)

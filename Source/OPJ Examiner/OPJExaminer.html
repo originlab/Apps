@@ -25,7 +25,7 @@
                 <ul class="nav nav-tabs" role="tablist"> 
                     <!--Yuki 2017-05-19 APPS_280-S3 LABEL CHANGES AND TOOLTIPS-->
                     <li role="presentation" class="active">
-                        <a href="#tab-2" data-toggle="tab" title="Find books without any data plotted in graphs or used in analysis">Independent Books</a>
+                        <a href="#tab-2" data-toggle="tab" title="Find books/sheets without any data plotted in graphs or used in analysis">Independent Books</a>
                     </li>
                     
                     <li role="presentation">
@@ -103,6 +103,13 @@
                     <div id="tab-2" class="tab-pane fade in active">
                         <div class="panel panel-default">
                             <div class="panel-body">
+                                <div>
+                                    <input type="radio" name="radiomode" value="book" checked>
+                                    <label for="sheet">Book Mode</label>
+                                    </br>
+                                    <input type="radio" name="radiomode" value="sheet">
+                                    <label for="sheet">Sheet Mode</label>
+                                </div>
                                 <!--tab2 button group-->
                                 <div class="container">      
                                     <div class="row">
