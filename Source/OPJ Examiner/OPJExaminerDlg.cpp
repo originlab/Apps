@@ -227,8 +227,8 @@ protected:
 	}
 	BOOL GetDlgInitSize(int& width, int& height) // when the dialog is ready, need to init the size and position of dialog
 	{
-		width = 1200;
-		height = 600;
+		width = 800;
+		height = 531;
 		return TRUE;
 	}
 	
