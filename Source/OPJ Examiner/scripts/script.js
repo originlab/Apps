@@ -508,12 +508,13 @@ window.onload = function(){
     list5.addEventListener("click",function(){
         //1.Clean and prepare section for new update 
         document.getElementById("section2").style.display = "none";
+        document.getElementById("table5").style.display = "none";
         //2.Show indication when scanning
         var startTime = new Date;
         Timer = setInterval(function() {
             document.getElementById("msg").className = "text-success";
             document.getElementById("msg").innerHTML = "Finding / Updating... (" + Math.floor((new Date - startTime)/1000) + " Seconds)"; 
-        }, 1000);
+        }, 1000);  
         //3.Find graphs       
         var strGraphGroups = window.external.ExtCall("GetGraphGroupJSON");
         if(strGraphGroups == "")
@@ -526,72 +527,158 @@ window.onload = function(){
         }
         else
         {
-            //4.List graphs grouped by folders  
-            clearInterval(Timer);
-            newCollapsePanel(2);
-            var graphGroups = JSON.parse(strGraphGroups);
-            var groupSize = Object.keys(graphGroups).length;
-            for(var ii = 0; ii < groupSize; ii++)
-            {
-                var graphsInGroup = JSON.parse(graphGroups[ii]);   
-                var graphFolder =  graphsInGroup[0];
-                newGraphSection(ii, graphFolder);
-                insertGraphsToSection(ii, graphsInGroup);
-                document.getElementById("msg").className = "text-success";
-                document.getElementById("msg").innerHTML = "Double click to active, and hover to show info."; 
-            }
-            //6. Tooltip to show the info of graph  
-            $("img").each(function(){  
-                var graphTooltip = "";
-                var $anchor = $(this);   
-                var graphPath = $(this).attr("src");
-                var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
-                var graphInfo = window.external.ExtCall("GetGraphInfo", graphName);
-                //Yuki 03/16/2018 APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
-                if(graphInfo == "undefined")
+            const viewmode = document.querySelector('input[name="viewmode"]:checked').value;
+            if('extra_large_icon' == viewmode){
+                //4.List graphs grouped by folders  
+                clearInterval(Timer);
+                newCollapsePanel(2);
+                var graphGroups = JSON.parse(strGraphGroups);
+                var groupSize = Object.keys(graphGroups).length;
+                for(var ii = 0; ii < groupSize; ii++)
                 {
-                    graphTooltip = "<p style=\"color:#dc3545\">The preview is not available, but you can create preview graphs in Project Explorer.</p>" +
-                                    "<p style=\"color:#dc3545\">Hover over any graph window in Project Explorer, then click the Create button in the pop-up message.</p>"
+                    var graphsInGroup = JSON.parse(graphGroups[ii]);   
+                    var graphFolder =  graphsInGroup[0];
+                    newGraphSection(ii, graphFolder);
+                    insertGraphsToSection(ii, graphsInGroup);
+                    document.getElementById("msg").className = "text-success";
+                    document.getElementById("msg").innerHTML = "Double click to active, and hover to show info."; 
                 }
-                else
+                //6. Tooltip to show the info of graph  
+                $("img").each(function(){  
+                    var graphTooltip = "";
+                    var $anchor = $(this);   
+                    var graphPath = $(this).attr("src");
+                    var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
+                    var graphInfo = window.external.ExtCall("GetGraphInfo", graphName);
+                    //Yuki 03/16/2018 APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
+                    if(graphInfo == "undefined")
+                    {
+                        graphTooltip = "<p style=\"color:#dc3545\">The preview is not available, but you can create preview graphs in Project Explorer.</p>" +
+                                        "<p style=\"color:#dc3545\">Hover over any graph window in Project Explorer, then click the Create button in the pop-up message.</p>"
+                    }
+                    else
+                    {
+                        var JsonOutput = JSON.parse(graphInfo); 
+                        //var graphTooltip = "";
+                        graphTooltip += "<p><b>Long Name</b>: " + JsonOutput.LN + "</p>" + 
+                                        "<p><b>Size</b>: " + JsonOutput.Size + "</p>"+
+                                        "<p><b>Source</b>: " + JsonOutput.Source + "</p>";
+                    }
+                    //END APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
+                    //Initialize popover               
+                    $anchor.popover({
+                        animate: true,
+                        container: "body",  
+                        delay:{"show": 800},
+                        html: true,
+                        placement:"top",
+                        trigger: "hover",
+                        title: graphName,
+                        content:graphTooltip,
+                    });
+                }); 
+                
+                //5. Double click to active graph widow
+                $("img").dblclick(function() 
                 {
-                    var JsonOutput = JSON.parse(graphInfo); 
-                    //var graphTooltip = "";
-                    graphTooltip += "<p><b>Long Name</b>: " + JsonOutput.LN + "</p>" + 
-                                    "<p><b>Size</b>: " + JsonOutput.Size + "</p>"+
-                                    "<p><b>Source</b>: " + JsonOutput.Source + "</p>";
-                }
-                //END APPS_280_S9_ADD_HINTS_FOR_NO_PREVIEW_GRAPHS
-                //Initialize popover               
-                $anchor.popover({
-                    animate: true,
-                    container: "body",  
-                    delay:{"show": 800},
-                    html: true,
-                    placement:"top",
-                    trigger: "hover",
-                    title: graphName,
-                    content:graphTooltip,
+                    var graphPath = $(this).attr("src");
+                    var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
+                    if(window.external.ExtCall("ActivePage", graphName))
+                    {
+                        document.getElementById("msg").className = "text-success";
+                        document.getElementById("msg").innerHTML = graphName + " is already active."; 
+                    }
+                    else
+                    {
+                        document.getElementById("msg").className = "text-success";
+                        document.getElementById("msg").innerHTML = "Failed to active " + graphName + "."; 
+                    }
                 });
-            }); 
-             
-            //5. Double click to active graph widow
-            $("img").dblclick(function() 
-            {
-                var graphPath = $(this).attr("src");
-                var graphName = graphPath.substring(graphPath.lastIndexOf("\\") + 1).replace(".png", "");
-                if(window.external.ExtCall("ActivePage", graphName))
-                {
-                    document.getElementById("msg").className = "text-success";
-                    document.getElementById("msg").innerHTML = graphName + " is already active."; 
+                //Yuki 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
+                $("#tab5Select").prop("disabled",false);
+                $("#tab-5 .float-right").hide();
+                //END 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
+            }
+            //Yuki 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
+            if('details' == viewmode) {
+                clearInterval(Timer);
+                const graphGroups = JSON.parse(strGraphGroups);
+                console.log(graphGroups)
+                const groupSize = Object.keys(graphGroups).length;
+                var rowsNum = 0;
+                for(var ii = 0; ii < groupSize; ii++){
+                    const graphsInGroup = JSON.parse(graphGroups[ii]);
+                    rowsNum = rowsNum + Object.keys(graphsInGroup).length - 1;
                 }
-                else
-                {
-                    document.getElementById("msg").className = "text-success";
-                    document.getElementById("msg").innerHTML = "Failed to active " + graphName + "."; 
+                newTab5Table(rowsNum);
+                var rowIndex = 1;
+                for(var ii = 0; ii < groupSize; ii++){
+                    const graphsInGroup = JSON.parse(graphGroups[ii]);
+                    var graphNum = Object.keys(graphsInGroup).length - 1;
+                    for(var ii = 1; ii <= graphNum; ii++) {           
+                        var graphName = graphsInGroup[ii];
+                        var graphJson = window.external.ExtCall("GetGraphInfo", graphName);
+                        showTab5OneRow(graphJson,rowIndex)
+                        rowIndex++;
+                    }
                 }
-            });
-        }        
+                //Enable to sort table by clicking table header
+                $(function(){
+                    $("#tb5").tablesorter({
+                        headers:{
+                            3:{sorter: "datasize"}    
+                        }
+                    });
+                }); 
+                //Enable to select every row in table
+                var table = document.getElementById("tb5");
+                var rows = table.getElementsByTagName("tr");
+                for (i = 1; i < rows.length; i++) 
+                {
+                    var currentRow = table.rows[i];
+                    var createClickHandler = 
+                        function(row) 
+                        {
+                            //Double click any row in table to activate its corresponding page
+                            return function() {  
+                                var cell = row.getElementsByTagName("td")[1];
+                                var bookName = cell.innerHTML;
+                                if(window.external.ExtCall("ActivePage", bookName))
+                                {
+                                    document.getElementById("msg").className = "text-success";
+                                    document.getElementById("msg").innerHTML = bookName + " is already active."; 
+                                }
+                                else
+                                {
+                                    document.getElementById("msg").className = "text-success";
+                                    document.getElementById("msg").innerHTML = "Failed to active " + bookName + "."; 
+                                }
+                            };
+                        };
+                    currentRow.ondblclick = createClickHandler(currentRow);
+                }  
+                //Enable to check/uncheck DeleteAll checkbox to check/uncheck all the checkboxes
+                var checkall = document.getElementById("checkbox0");
+                checkall.addEventListener("click", function(){
+                    if($(this).is(":checked")) {
+                        $(":checkbox").each(function() { this.checked = true;});
+                    }
+                    else {
+                        $(":checkbox").each(function() { this.checked = false;});
+                    }  
+                }); 
+
+                //init buttons and message
+                document.getElementById("msg").className = "text-success";
+                document.getElementById("msg").innerHTML = "Double click on any row to activate the book!"; 
+                $("#tab5Select").prop("disabled",true);
+                $("#tab-5 .float-right").show();
+            } 
+            //END 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB  
+        }
+
+
+   
     });
        
     selectedImgsArr = [];
@@ -626,6 +713,17 @@ window.onload = function(){
           
     var export5 = document.getElementById("tab5Export");
     export5.addEventListener("click",function(){
+        //Yuki 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
+        const viewmode = document.querySelector('input[name="viewmode"]:checked').value
+        if("details" == viewmode){
+            selectedImgsArr = [];
+            $(".table").each(function(){
+                $(this).find("tbody input:checked").parents("tr").find("td:nth-child(2)").each(function() {
+                    selectedImgsArr.push(this.innerHTML);
+                });
+            });
+        }
+        //END 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
         var ret = window.external.ExtCall("ExportGraph", selectedImgsArr);
         if(ret)
         {
@@ -641,6 +739,17 @@ window.onload = function(){
     
     var sendToGraph5 = document.getElementById("tab5SendToGraph");
     sendToGraph5.addEventListener("click",function(){
+        //Yuki 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
+        const viewmode = document.querySelector('input[name="viewmode"]:checked').value
+        if("details" == viewmode){
+            selectedImgsArr = [];
+            $(".table").each(function(){
+                $(this).find("tbody input:checked").parents("tr").find("td:nth-child(2)").each(function() {
+                    selectedImgsArr.push(this.innerHTML);
+                });
+            });
+        }
+        //END 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
         var ret = window.external.ExtCall("SendToGraph", selectedImgsArr);
         if(ret)
         {
@@ -661,13 +770,17 @@ window.onload = function(){
     $("#YesCancelDialog").on("click", "#YesDelete", function(e) {  
         //Yuki 01/04/2018 APPS-68-S4-NEW_GRAPH_TAB        
         var source = $(e.delegateTarget).data("bs.modal").options.source;
-        if("tab5" == source)
-        {
-            deleteGraphs(selectedImgsArr);
+        if("tab5" == source){
+            const viewmode = document.querySelector('input[name="viewmode"]:checked').value
+            if("extra_large_icon" == viewmode)
+                deleteGraphs(selectedImgsArr);
+            //Yuki 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
+            else if("details" == viewmode) 
+                deleteBooksOrSheets("book");
+            //END 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
         }
         //END APPS-68-S4-NEW_GRAPH_TAB
-        else
-        {
+        else {
             if("tab2" == source) {
                 var checkmode = document.querySelector('#tab-2 input[name="radiomode"]:checked').value;
                 deleteBooksOrSheets(checkmode);
@@ -1152,5 +1265,48 @@ function selectImage(selectedImgsArr)
         document.getElementById("msg").innerHTML = "Selecting " + num + " graphs."; 
     });    
 }
-
+//Yuki 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB 
+function newTab5Table(RowsNum) 
+{     
+    var data = "";
+    data += "<div class=\"table-responsive\">";
+    data += "<table id=\"tb5\" class=\"table table-condensed table-hover\">";   // Set the head for table
+    data += "<thead>" + 
+            "<tr>" + 
+            "<th>#<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +   
+            "<th>Name<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +  
+            "<th>Folder<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" + 
+            "<th>Size<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th>Source<span class=\"glyphicon glyphicon-sort\" aria-hidden=\"true\" style=\"font-size:0.8rem;\"></th>" +
+            "<th><input type=\"checkbox\" id=\"checkbox0\"></th>" +
+            "</tr>" +
+            "</thead>" +
+            "<tbody>";   
+    for (var i = 1; i <= RowsNum; i++) // Set the body for table
+    {   
+        data += "<tr>";  
+        data += "<td>" + i + "</td>"; // Column for number
+        data += "<td></td>"; // Column for short name
+        data += "<td></td>"; // Column for location
+        data += "<td></td>"; // Column for size
+        data += "<td style='word-wrap:break-word;word-break:break-all;' width='40%;'></td>"; // Column for source
+        data += "<td><input type=\"checkbox\" name=\"checkbox\" id=\"checkbox" + i + "\"></td>"; // Column for delete checkbox
+        data += "</tr>";   
+    } 
+    data += "</tbody>";    
+    data += "</table>"; 
+    data += "</div>";
+    document.getElementById("table5").style.display = "block";   
+    document.getElementById("table5").innerHTML = data;    
+} 
+function showTab5OneRow(stringOutput, RowIndex)
+{ 
+    var JsonOutput = JSON.parse(stringOutput);//Parse string to Json
+    var table = document.getElementById("tb5");
+    table.rows[RowIndex].cells[1].innerHTML = JsonOutput.SN;
+    table.rows[RowIndex].cells[2].innerHTML = JsonOutput.Path;
+    table.rows[RowIndex].cells[3].innerHTML = JsonOutput.Size;
+    table.rows[RowIndex].cells[4].innerHTML = JsonOutput.Source;
+} 
+//END 08/05/2021 APPS-1082-S1-DETAILS_VIEW_FOR_GRAPH_TAB  
 //END APPS-68-S4-NEW_GRAPH_TAB
